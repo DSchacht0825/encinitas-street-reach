@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { format } from 'date-fns'
 import EncounterHeatMap from '@/components/EncounterHeatMap'
 import ExportButton from '@/components/ExportButton'
+import LogoutButton from '@/components/LogoutButton'
 
 export default async function DashboardPage({
   searchParams,
@@ -141,6 +142,7 @@ export default async function DashboardPage({
                 </p>
               </div>
             </div>
+            <LogoutButton />
           </div>
         </div>
       </div>

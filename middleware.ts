@@ -32,8 +32,17 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protect admin routes
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
+  // Allow access to login page without authentication
+  if (request.nextUrl.pathname === '/login') {
+    // If already logged in, redirect to home
+    if (user) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+    return supabaseResponse
+  }
+
+  // Protect all other routes - require authentication
+  if (!user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
