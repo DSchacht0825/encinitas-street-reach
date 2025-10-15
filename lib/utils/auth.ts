@@ -18,18 +18,26 @@ export interface UserProfile {
 export async function isAdmin(): Promise<boolean> {
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (userError || !user) {
+    console.error('Auth error in isAdmin:', userError)
     return false
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
+  if (profileError) {
+    console.error('Profile fetch error in isAdmin:', profileError)
+    console.error('User ID:', user.id)
+    return false
+  }
+
+  console.log('isAdmin check - User ID:', user.id, 'Profile:', profile)
   return (profile as { role: UserRole } | null)?.role === 'admin'
 }
 
