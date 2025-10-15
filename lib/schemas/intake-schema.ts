@@ -5,7 +5,7 @@ export const intakeFormSchema = z.object({
   first_name: z.string().min(1, 'First name is required').max(100),
   last_name: z.string().min(1, 'Last name is required').max(100),
   nickname: z.string().max(100).optional().nullable(),
-  date_of_birth: z.string().min(1, 'Date of birth is required'),
+  date_of_birth: z.string().min(1, 'Date of birth is required').regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   gender: z.string().min(1, 'Gender is required'),
   race: z.string().min(1, 'Race is required'),
   ethnicity: z.string().min(1, 'Ethnicity is required'),
@@ -29,7 +29,7 @@ export const intakeFormSchema = z.object({
   support_system: z.string().optional().nullable(),
 
   // Program Information
-  enrollment_date: z.string().min(1, 'Enrollment date is required'),
+  enrollment_date: z.string().min(1, 'Enrollment date is required').regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   case_manager: z.string().optional().nullable(),
   referral_source: z.string().optional().nullable(),
   release_of_information: z.boolean(),
