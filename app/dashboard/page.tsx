@@ -84,6 +84,11 @@ export default async function DashboardPage({
   const allEncounters = (encounters || []) as EncounterData[]
   const allPersons = (persons || []) as PersonData[]
 
+  // Calculate clients served in date range (unique person_ids from filtered encounters)
+  const clientsServedInRange = startDate && endDate
+    ? new Set(allEncounters.map(e => e.person_id)).size
+    : allPersons.length
+
   // Calculate metrics
   const metrics = {
     // 1. Number of unduplicated individuals served
@@ -152,6 +157,24 @@ export default async function DashboardPage({
     naloxone: allEncounters.filter((e) => e.naloxone_distributed).length,
     transportation: allEncounters.filter((e) => e.transportation_provided).length,
     showerTrailer: allEncounters.filter((e) => e.shower_trailer).length,
+  }
+
+  // Referral breakdown by provider
+  const referralBreakdown = {
+    mat: allEncounters
+      .filter(e => e.mat_referral && e.mat_provider)
+      .reduce((acc, e) => {
+        const provider = e.mat_provider || 'Unknown'
+        acc[provider] = (acc[provider] || 0) + 1
+        return acc
+      }, {} as Record<string, number>),
+    detox: allEncounters
+      .filter(e => e.detox_referral && e.detox_provider)
+      .reduce((acc, e) => {
+        const provider = e.detox_provider || 'Unknown'
+        acc[provider] = (acc[provider] || 0) + 1
+        return acc
+      }, {} as Record<string, number>),
   }
 
   // GPS coordinates for heat map
@@ -270,6 +293,113 @@ export default async function DashboardPage({
               {format(new Date(endDate), 'MMM dd, yyyy')}
             </p>
           )}
+        </div>
+
+        {/* Custom Reports Summary - Highlighted Section */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-lg p-6 mb-6 border-2 border-blue-200">
+          <div className="flex items-center mb-4">
+            <svg
+              className="w-6 h-6 text-blue-600 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <h3 className="text-xl font-bold text-gray-900">
+              Custom Reports Summary
+              {startDate && endDate && (
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  ({format(new Date(startDate), 'MMM dd, yyyy')} - {format(new Date(endDate), 'MMM dd, yyyy')})
+                </span>
+              )}
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-gray-600 font-medium">Clients Served</p>
+              <p className="text-3xl font-bold text-blue-600 mt-1">{clientsServedInRange}</p>
+              <p className="text-xs text-gray-500 mt-1">Unduplicated individuals</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-gray-600 font-medium">Service Interactions</p>
+              <p className="text-3xl font-bold text-green-600 mt-1">{metrics.totalInteractions}</p>
+              <p className="text-xs text-gray-500 mt-1">Total encounters</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-gray-600 font-medium">Naloxone Distributed</p>
+              <p className="text-3xl font-bold text-red-600 mt-1">{metrics.naloxoneDistributed}</p>
+              <p className="text-xs text-gray-500 mt-1">Kits given out</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-gray-600 font-medium">Fentanyl Test Strips</p>
+              <p className="text-3xl font-bold text-yellow-600 mt-1">{metrics.fentanylTestStrips}</p>
+              <p className="text-xs text-gray-500 mt-1">Total distributed</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-gray-600 font-medium">Total Referrals</p>
+              <p className="text-3xl font-bold text-purple-600 mt-1">{metrics.matDetoxReferrals}</p>
+              <p className="text-xs text-gray-500 mt-1">MAT & Detox combined</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-gray-600 font-medium">Housing Placements</p>
+              <p className="text-3xl font-bold text-teal-600 mt-1">{metrics.permanentHousingPlacements}</p>
+              <p className="text-xs text-gray-500 mt-1">Permanent housing</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Referral Breakdown Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Referral Breakdown by Provider</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-md font-medium text-purple-700 mb-3">MAT Referrals</h4>
+              {Object.keys(referralBreakdown.mat).length > 0 ? (
+                <dl className="space-y-2">
+                  {Object.entries(referralBreakdown.mat)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([provider, count]) => (
+                      <div key={provider} className="flex justify-between items-center bg-purple-50 px-3 py-2 rounded">
+                        <dt className="text-gray-700">{provider}</dt>
+                        <dd className="font-semibold text-purple-600">{count}</dd>
+                      </div>
+                    ))}
+                </dl>
+              ) : (
+                <p className="text-gray-500 text-sm italic">No MAT referrals in this period</p>
+              )}
+            </div>
+
+            <div>
+              <h4 className="text-md font-medium text-red-700 mb-3">Detox Referrals</h4>
+              {Object.keys(referralBreakdown.detox).length > 0 ? (
+                <dl className="space-y-2">
+                  {Object.entries(referralBreakdown.detox)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([provider, count]) => (
+                      <div key={provider} className="flex justify-between items-center bg-red-50 px-3 py-2 rounded">
+                        <dt className="text-gray-700">{provider}</dt>
+                        <dd className="font-semibold text-red-600">{count}</dd>
+                      </div>
+                    ))}
+                </dl>
+              ) : (
+                <p className="text-gray-500 text-sm italic">No detox referrals in this period</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Key Metrics Grid */}
