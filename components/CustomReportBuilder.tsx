@@ -13,6 +13,7 @@ interface Person {
   gender: string
   race: string
   ethnicity: string
+  sexual_orientation?: string | null
   living_situation: string
   length_of_time_homeless?: string | null
   veteran_status: boolean
@@ -81,6 +82,7 @@ export default function CustomReportBuilder({
   const [includeByRace, setIncludeByRace] = useState(false)
   const [includeByEthnicity, setIncludeByEthnicity] = useState(false)
   const [includeByGender, setIncludeByGender] = useState(false)
+  const [includeBySexualOrientation, setIncludeBySexualOrientation] = useState(false)
   const [includeByAgeRange, setIncludeByAgeRange] = useState(false)
   const [includeByVeteranStatus, setIncludeByVeteranStatus] = useState(false)
   const [includeByDisabilityStatus, setIncludeByDisabilityStatus] = useState(false)
@@ -446,6 +448,35 @@ export default function CustomReportBuilder({
         Object.entries(genderBreakdown).forEach(([gender, count]) => {
           reportData.push({
             'Metric': gender,
+            'Value': count,
+            'Description': '',
+            '': '',
+          })
+        })
+      }
+
+      if (includeBySexualOrientation) {
+        const sexualOrientationBreakdown = filteredPersons.reduce((acc, p) => {
+          const orientation = p.sexual_orientation || 'Not specified'
+          acc[orientation] = (acc[orientation] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY SEXUAL ORIENTATION ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(sexualOrientationBreakdown).forEach(([orientation, count]) => {
+          reportData.push({
+            'Metric': orientation,
             'Value': count,
             'Description': '',
             '': '',
@@ -847,6 +878,16 @@ export default function CustomReportBuilder({
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700">Breakdown by Gender</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeBySexualOrientation}
+              onChange={(e) => setIncludeBySexualOrientation(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Sexual Orientation</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
