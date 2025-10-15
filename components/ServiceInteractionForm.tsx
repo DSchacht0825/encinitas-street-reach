@@ -13,6 +13,7 @@ import { REFERRAL_SOURCES } from '@/lib/schemas/intake-schema'
 import { useGeolocation } from '@/lib/hooks/useGeolocation'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import MapPicker from './MapPicker'
 
 interface ServiceInteractionFormProps {
   personId: string
@@ -25,6 +26,8 @@ export default function ServiceInteractionForm({
 }: ServiceInteractionFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showMapPicker, setShowMapPicker] = useState(false)
+  const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number } | null>(null)
   const { latitude, longitude, accuracy, error: gpsError, loading: gpsLoading, refreshLocation } = useGeolocation()
 
   const {
@@ -53,17 +56,30 @@ export default function ServiceInteractionForm({
   const detoxReferral = watch('detox_referral')
   const naloxoneDistributed = watch('naloxone_distributed')
 
-  // Set GPS coordinates when available
+  // Set GPS coordinates when available (auto GPS takes priority)
   useEffect(() => {
     if (latitude !== null && longitude !== null) {
       setValue('latitude', latitude)
       setValue('longitude', longitude)
+      setManualLocation(null) // Clear manual location if GPS is available
     }
   }, [latitude, longitude, setValue])
 
+  // Handle manual location selection from map
+  const handleManualLocationSelect = (lat: number, lng: number) => {
+    setManualLocation({ lat, lng })
+    setValue('latitude', lat)
+    setValue('longitude', lng)
+  }
+
+  // Determine which location to use (GPS or manual)
+  const currentLatitude = manualLocation?.lat ?? latitude
+  const currentLongitude = manualLocation?.lng ?? longitude
+  const isManuallySet = manualLocation !== null
+
   const onSubmit = async (data: EncounterFormData) => {
-    if (latitude === null || longitude === null) {
-      alert('GPS location is required. Please enable location services and try again.')
+    if (currentLatitude === null || currentLongitude === null) {
+      alert('GPS location is required. Please enable location services or manually select a location on the map.')
       return
     }
 
@@ -113,69 +129,136 @@ export default function ServiceInteractionForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* GPS Location Status */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <svg
-            className="w-6 h-6 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-          GPS Location (Required)
-        </h2>
+    <>
+      {showMapPicker && (
+        <MapPicker
+          initialLatitude={currentLatitude || undefined}
+          initialLongitude={currentLongitude || undefined}
+          onLocationSelect={handleManualLocationSelect}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
 
-        {gpsLoading && (
-          <div className="flex items-center text-blue-600">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
-            Getting your location...
-          </div>
-        )}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* GPS Location Status */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <svg
+              className="w-6 h-6 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            GPS Location (Required)
+          </h2>
 
-        {gpsError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700 font-medium">❌ {gpsError}</p>
+          {gpsLoading && !isManuallySet && (
+            <div className="flex items-center text-blue-600 mb-4">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
+              Getting your location...
+            </div>
+          )}
+
+          {gpsError && !isManuallySet && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-red-700 font-medium">❌ {gpsError}</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={refreshLocation}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Try Again
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMapPicker(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Select Location on Map
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isManuallySet && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-blue-700 font-medium">📍 Location set manually from map</p>
+              <p className="text-sm text-blue-600 mt-1">
+                Coordinates: {currentLatitude!.toFixed(6)}, {currentLongitude!.toFixed(6)}
+              </p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowMapPicker(true)}
+                  className="text-sm text-blue-700 underline hover:text-blue-800"
+                >
+                  Change Location
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualLocation(null)
+                    refreshLocation()
+                  }}
+                  className="text-sm text-blue-700 underline hover:text-blue-800"
+                >
+                  Use Auto GPS Instead
+                </button>
+              </div>
+            </div>
+          )}
+
+          {latitude !== null && longitude !== null && !isManuallySet && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-green-700 font-medium">✓ Location captured successfully (Auto GPS)</p>
+              <p className="text-sm text-green-600 mt-1">
+                Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                {accuracy && ` (±${Math.round(accuracy)}m)`}
+              </p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={refreshLocation}
+                  className="text-sm text-green-700 underline hover:text-green-800"
+                >
+                  Refresh Location
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMapPicker(true)}
+                  className="text-sm text-green-700 underline hover:text-green-800"
+                >
+                  Use Map Instead
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Manual pin drop option always available */}
+          {!isManuallySet && latitude === null && !gpsLoading && !gpsError && (
             <button
               type="button"
-              onClick={refreshLocation}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              onClick={() => setShowMapPicker(true)}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Try Again
+              Select Location on Map
             </button>
-          </div>
-        )}
-
-        {latitude !== null && longitude !== null && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-700 font-medium">✓ Location captured successfully</p>
-            <p className="text-sm text-green-600 mt-1">
-              Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
-              {accuracy && ` (±${Math.round(accuracy)}m)`}
-            </p>
-            <button
-              type="button"
-              onClick={refreshLocation}
-              className="mt-2 text-sm text-green-700 underline hover:text-green-800"
-            >
-              Refresh Location
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
       {/* Basic Service Information */}
       <div className="bg-white p-6 rounded-lg shadow">
@@ -482,12 +565,13 @@ export default function ServiceInteractionForm({
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || latitude === null || longitude === null}
+          disabled={isSubmitting || currentLatitude === null || currentLongitude === null}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Saving...' : 'Save Service Interaction'}
         </button>
       </div>
     </form>
+    </>
   )
 }
