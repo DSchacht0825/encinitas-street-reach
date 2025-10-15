@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { format } from 'date-fns'
 import EncounterHeatMap from '@/components/EncounterHeatMap'
 import ExportButton from '@/components/ExportButton'
+import CustomReportBuilder from '@/components/CustomReportBuilder'
 import LogoutButton from '@/components/LogoutButton'
 
 export default async function DashboardPage({
@@ -400,6 +401,11 @@ export default async function DashboardPage({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Custom Report Builder */}
+        <div className="mb-6">
+          <CustomReportBuilder persons={allPersons} encounters={allEncounters} />
         </div>
 
         {/* Key Metrics Grid */}
