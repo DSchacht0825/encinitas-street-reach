@@ -29,12 +29,14 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
     notFound()
   }
 
-  // Fetch encounters count
-  const { count: encounterCount } = await supabase
+  // Fetch encounters count and data
+  const { data: encounters, count: encounterCount } = await supabase
     .from('encounters')
-    .select('*', { count: 'exact', head: true })
+    .select('*', { count: 'exact' })
     .eq('person_id', params.id)
+    .order('service_date', { ascending: false })
 
+  const allEncounters = encounters || []
   const age = calculateAge(person.date_of_birth)
 
   return (
@@ -192,26 +194,195 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
           </div>
         </div>
 
-        {/* Interaction Timeline - Coming Soon */}
+        {/* Interaction Timeline */}
         <div className="bg-white rounded-lg shadow p-8">
-          <h3 className="text-xl font-semibold mb-4">Service Interaction Timeline</h3>
-          <div className="text-center py-12 text-gray-500">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <p>Timeline view coming soon!</p>
-            <p className="text-sm mt-2">This will show all service interactions, case notes, and progress.</p>
-          </div>
+          <h3 className="text-xl font-semibold mb-6">Service Interaction Timeline</h3>
+
+          {allEncounters.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p>No service interactions recorded yet</p>
+              <p className="text-sm mt-2">
+                Click "New Service Interaction" above to record the first encounter
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {allEncounters.map((encounter, index) => (
+                <div
+                  key={encounter.id}
+                  className="relative pl-8 pb-8 border-l-2 border-gray-200 last:pb-0 last:border-l-0"
+                >
+                  {/* Timeline dot */}
+                  <div className="absolute left-0 top-0 -ml-2 w-4 h-4 rounded-full bg-blue-600 border-4 border-white"></div>
+
+                  {/* Encounter card */}
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          {format(new Date(encounter.service_date), 'MMMM dd, yyyy')}
+                        </h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {encounter.outreach_location}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Outreach Worker: {encounter.outreach_worker}
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Interaction #{allEncounters.length - index}
+                      </span>
+                    </div>
+
+                    {/* Services Provided */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      {/* Clinical Services */}
+                      {(encounter.mat_referral || encounter.detox_referral || encounter.co_occurring_mh_sud) && (
+                        <div>
+                          <h5 className="text-sm font-semibold text-gray-700 mb-2">
+                            Clinical Services
+                          </h5>
+                          <ul className="space-y-1 text-sm">
+                            {encounter.mat_referral && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                MAT Referral
+                                {encounter.mat_type && ` - ${encounter.mat_type}`}
+                                {encounter.mat_provider && ` (${encounter.mat_provider})`}
+                              </li>
+                            )}
+                            {encounter.detox_referral && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Detox Referral
+                                {encounter.detox_provider && ` - ${encounter.detox_provider}`}
+                              </li>
+                            )}
+                            {encounter.co_occurring_mh_sud && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Co-Occurring MH/SUD
+                                {encounter.co_occurring_type && ` - ${encounter.co_occurring_type}`}
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Harm Reduction */}
+                      {(encounter.naloxone_distributed || encounter.fentanyl_test_strips_count || encounter.harm_reduction_education) && (
+                        <div>
+                          <h5 className="text-sm font-semibold text-gray-700 mb-2">
+                            Harm Reduction
+                          </h5>
+                          <ul className="space-y-1 text-sm">
+                            {encounter.naloxone_distributed && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Naloxone Kit Distributed
+                              </li>
+                            )}
+                            {encounter.fentanyl_test_strips_count > 0 && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Fentanyl Test Strips ({encounter.fentanyl_test_strips_count})
+                              </li>
+                            )}
+                            {encounter.harm_reduction_education && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Harm Reduction Education
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Other Services */}
+                      {(encounter.transportation_provided || encounter.shower_trailer || encounter.other_services) && (
+                        <div>
+                          <h5 className="text-sm font-semibold text-gray-700 mb-2">
+                            Other Services
+                          </h5>
+                          <ul className="space-y-1 text-sm">
+                            {encounter.transportation_provided && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Transportation Provided
+                              </li>
+                            )}
+                            {encounter.shower_trailer && (
+                              <li className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 mr-2 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Shower Trailer Access
+                              </li>
+                            )}
+                            {encounter.other_services && (
+                              <li className="flex items-start text-gray-600">
+                                <svg className="w-4 h-4 mr-2 mt-0.5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span>{encounter.other_services}</span>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Case Notes */}
+                    {encounter.case_management_notes && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h5 className="text-sm font-semibold text-gray-700 mb-2">
+                          Case Notes
+                        </h5>
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                          {encounter.case_management_notes}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* GPS Coordinates */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <p className="text-xs text-gray-500">
+                        GPS: {encounter.latitude.toFixed(6)}, {encounter.longitude.toFixed(6)}
+                        {encounter.language_preference && ` • Language: ${encounter.language_preference}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
