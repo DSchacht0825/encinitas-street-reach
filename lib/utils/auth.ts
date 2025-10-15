@@ -16,29 +16,46 @@ export interface UserProfile {
  * @returns true if user is admin, false otherwise
  */
 export async function isAdmin(): Promise<boolean> {
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-  if (userError || !user) {
-    console.error('Auth error in isAdmin:', userError)
+    console.log('=== isAdmin Debug Start ===')
+    console.log('User error:', userError)
+    console.log('User:', user ? `${user.email} (${user.id})` : 'null')
+
+    if (userError || !user) {
+      console.error('Auth error in isAdmin:', userError)
+      console.log('=== isAdmin Debug End: NO USER ===')
+      return false
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    console.log('Profile error:', profileError)
+    console.log('Profile data:', profile)
+
+    if (profileError) {
+      console.error('Profile fetch error in isAdmin:', profileError)
+      console.error('User ID:', user.id)
+      console.log('=== isAdmin Debug End: PROFILE ERROR ===')
+      return false
+    }
+
+    const isAdminUser = (profile as { role: UserRole } | null)?.role === 'admin'
+    console.log('Final result:', isAdminUser)
+    console.log('=== isAdmin Debug End ===')
+
+    return isAdminUser
+  } catch (error) {
+    console.error('Unexpected error in isAdmin:', error)
     return false
   }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError) {
-    console.error('Profile fetch error in isAdmin:', profileError)
-    console.error('User ID:', user.id)
-    return false
-  }
-
-  console.log('isAdmin check - User ID:', user.id, 'Profile:', profile)
-  return (profile as { role: UserRole } | null)?.role === 'admin'
 }
 
 /**
