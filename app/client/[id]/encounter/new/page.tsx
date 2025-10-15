@@ -4,20 +4,28 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 
+type PersonData = {
+  id: string
+  first_name: string
+  last_name: string
+  client_id: string
+}
+
 export default async function NewEncounterPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
 
   // Fetch the person's details
-  const { data: person, error } = await supabase
+  const { data, error } = await supabase
     .from('persons')
     .select('id, first_name, last_name, client_id')
     .eq('id', params.id)
     .single()
 
-  if (error || !person) {
+  if (error || !data) {
     notFound()
   }
 
+  const person = data as PersonData
   const fullName = `${person.first_name} ${person.last_name}`
 
   return (
@@ -67,7 +75,7 @@ export default async function NewEncounterPage({ params }: { params: { id: strin
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            Back to {fullName}'s Profile
+            Back to {fullName}&apos;s Profile
           </Link>
           <h2 className="text-3xl font-bold text-gray-900 mt-4">
             New Service Interaction

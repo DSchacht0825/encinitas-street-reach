@@ -146,7 +146,7 @@ export default function EncounterHeatMap({ locations }: EncounterHeatMapProps) {
             if (geometry.type === 'Point') {
               map.current.easeTo({
                 center: geometry.coordinates as [number, number],
-                zoom: zoom,
+                zoom: zoom || undefined,
               })
             }
           })

@@ -81,10 +81,18 @@ export default function ClientSearch() {
       if (error) throw error
 
       // Process the data to include only the most recent encounter
-      const processedPersons = persons?.map((person: any) => ({
+      const processedPersons = persons?.map((person: {
+        id: string
+        client_id: string
+        first_name: string
+        last_name: string
+        nickname: string | null
+        date_of_birth: string
+        encounters?: Array<{ service_date: string; outreach_location: string }>
+      }) => ({
         ...person,
         last_encounter: person.encounters && person.encounters.length > 0
-          ? person.encounters.sort((a: any, b: any) =>
+          ? person.encounters.sort((a, b) =>
               new Date(b.service_date).getTime() - new Date(a.service_date).getTime()
             )[0]
           : undefined,

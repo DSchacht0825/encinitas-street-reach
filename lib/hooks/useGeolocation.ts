@@ -98,7 +98,7 @@ export function useGeolocation(options: GeolocationOptions = {}) {
           loading: false,
         })
       },
-      (error) => {
+      () => {
         setState({
           latitude: null,
           longitude: null,

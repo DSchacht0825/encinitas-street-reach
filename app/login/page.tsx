@@ -30,8 +30,8 @@ export default function LoginPage() {
       // Success - redirect to home
       router.push('/')
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Invalid email or password')
+    } catch (err) {
+      setError((err as Error).message || 'Invalid email or password')
     } finally {
       setIsLoading(false)
     }

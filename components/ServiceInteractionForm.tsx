@@ -113,7 +113,7 @@ export default function ServiceInteractionForm({
           shower_trailer: data.shower_trailer,
           other_services: data.other_services || null,
           case_management_notes: data.case_management_notes || null,
-        },
+        } as never,
       ])
 
       if (error) throw error
@@ -550,7 +550,7 @@ export default function ServiceInteractionForm({
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="text-sm text-gray-500 mt-2">
-          These notes will be added to the client's Individual Service Plan (ISP)
+          These notes will be added to the client&apos;s Individual Service Plan (ISP)
         </p>
       </div>
 

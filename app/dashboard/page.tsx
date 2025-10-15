@@ -37,8 +37,52 @@ export default async function DashboardPage({
     console.error('Dashboard data fetch error:', encountersError || personsError)
   }
 
-  const allEncounters = encounters || []
-  const allPersons = persons || []
+  // Type assertions for Supabase data (all fields from database)
+  type EncounterData = {
+    service_date: string
+    person_id: number
+    outreach_location: string
+    latitude: number
+    longitude: number
+    outreach_worker: string
+    language_preference?: string | null
+    co_occurring_mh_sud: boolean
+    co_occurring_type?: string | null
+    mat_referral: boolean
+    mat_type?: string | null
+    mat_provider?: string | null
+    detox_referral: boolean
+    detox_provider?: string | null
+    naloxone_distributed: boolean
+    naloxone_date?: string | null
+    fentanyl_test_strips_count?: number | null
+    harm_reduction_education: boolean
+    transportation_provided: boolean
+    shower_trailer: boolean
+    other_services?: string | null
+    case_management_notes?: string | null
+  }
+
+  type PersonData = {
+    client_id: string
+    first_name: string
+    last_name: string
+    nickname?: string | null
+    date_of_birth: string
+    gender: string
+    race: string
+    ethnicity: string
+    living_situation: string
+    length_of_time_homeless?: string | null
+    veteran_status: boolean
+    chronic_homeless: boolean
+    enrollment_date: string
+    case_manager?: string | null
+    referral_source?: string | null
+  }
+
+  const allEncounters = (encounters || []) as EncounterData[]
+  const allPersons = (persons || []) as PersonData[]
 
   // Calculate metrics
   const metrics = {

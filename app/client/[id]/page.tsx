@@ -19,24 +19,70 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
   const supabase = await createClient()
 
   // Fetch person details
-  const { data: person, error } = await supabase
+  const { data, error } = await supabase
     .from('persons')
     .select('*')
     .eq('id', params.id)
     .single()
 
-  if (error || !person) {
+  if (error || !data) {
     notFound()
   }
 
+  // Type assertion for person data (all fields from persons table)
+  const person = data as {
+    id: string
+    client_id: string
+    first_name: string
+    last_name: string
+    nickname?: string | null
+    date_of_birth: string
+    gender: string
+    race: string
+    ethnicity: string
+    living_situation: string
+    length_of_time_homeless?: string | null
+    veteran_status: boolean
+    chronic_homeless: boolean
+    enrollment_date: string
+    case_manager?: string | null
+    referral_source?: string | null
+  }
+
   // Fetch encounters count and data
-  const { data: encounters, count: encounterCount } = await supabase
+  const { data: encounterData, count: encounterCount } = await supabase
     .from('encounters')
     .select('*', { count: 'exact' })
     .eq('person_id', params.id)
     .order('service_date', { ascending: false })
 
-  const allEncounters = encounters || []
+  // Type assertion for encounter data
+  type EncounterData = {
+    id: number
+    service_date: string
+    outreach_location: string
+    latitude: number
+    longitude: number
+    outreach_worker: string
+    language_preference?: string | null
+    co_occurring_mh_sud: boolean
+    co_occurring_type?: string | null
+    mat_referral: boolean
+    mat_type?: string | null
+    mat_provider?: string | null
+    detox_referral: boolean
+    detox_provider?: string | null
+    naloxone_distributed: boolean
+    naloxone_date?: string | null
+    fentanyl_test_strips_count?: number | null
+    harm_reduction_education: boolean
+    transportation_provided: boolean
+    shower_trailer: boolean
+    other_services?: string | null
+    case_management_notes?: string | null
+  }
+
+  const allEncounters = (encounterData || []) as EncounterData[]
   const age = calculateAge(person.date_of_birth)
 
   return (
@@ -215,7 +261,7 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
               </svg>
               <p>No service interactions recorded yet</p>
               <p className="text-sm mt-2">
-                Click "New Service Interaction" above to record the first encounter
+                Click &quot;New Service Interaction&quot; above to record the first encounter
               </p>
             </div>
           ) : (
@@ -303,7 +349,7 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
                                 Naloxone Kit Distributed
                               </li>
                             )}
-                            {encounter.fentanyl_test_strips_count > 0 && (
+                            {(encounter.fentanyl_test_strips_count || 0) > 0 && (
                               <li className="flex items-center text-gray-600">
                                 <svg className="w-4 h-4 mr-2 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

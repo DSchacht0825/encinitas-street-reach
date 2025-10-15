@@ -30,7 +30,6 @@ export default function IntakeForm() {
     register,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors },
   } = useForm<IntakeFormData>({
     resolver: zodResolver(intakeFormSchema),
@@ -82,7 +81,7 @@ export default function IntakeForm() {
     const supabase = createClient()
 
     try {
-      const { data: newPerson, error } = await supabase
+      const { data: result, error } = await supabase
         .from('persons')
         .insert([
           {
@@ -104,12 +103,15 @@ export default function IntakeForm() {
             referral_source: data.referral_source || null,
             preferred_language: data.preferred_language || null,
             cultural_lived_experience: data.cultural_lived_experience || null,
-          },
+          } as never,
         ])
         .select()
         .single()
 
       if (error) throw error
+
+      // Type assertion for returned person data
+      const newPerson = result as { id: string }
 
       // Success! Navigate to the person's profile
       router.push(`/client/${newPerson.id}`)
@@ -136,17 +138,6 @@ export default function IntakeForm() {
   const handleCancelDuplicate = () => {
     setShowDuplicateModal(false)
     setPendingFormData(null)
-  }
-
-  const calculateAge = (dob: string): number => {
-    const birthDate = new Date(dob)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-    return age
   }
 
   return (
@@ -460,7 +451,7 @@ export default function IntakeForm() {
                 </h3>
                 <p className="text-sm text-yellow-700 mt-1">
                   We found {similarPersons.length} person(s) with similar names. When you
-                  submit, you'll be asked to confirm if this is a new person.
+                  submit, you&apos;ll be asked to confirm if this is a new person.
                 </p>
               </div>
             </div>

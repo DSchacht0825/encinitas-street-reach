@@ -35,12 +35,15 @@ export async function checkForDuplicates(
 
   try {
     // Call the database function for fuzzy search
-    const { data, error } = await supabase.rpc('search_similar_persons', {
-      search_first_name: firstName,
-      search_last_name: lastName,
-      search_dob: dateOfBirth || null,
-      similarity_threshold: threshold,
-    })
+    const { data, error } = await supabase.rpc(
+      'search_similar_persons',
+      {
+        search_first_name: firstName,
+        search_last_name: lastName,
+        search_dob: dateOfBirth || null,
+        similarity_threshold: threshold,
+      } as never
+    )
 
     if (error) {
       console.error('Error checking for duplicates:', error)
