@@ -13,6 +13,8 @@ import {
   DISABILITY_TYPES,
   REFERRAL_SOURCES,
   TIME_HOMELESS_OPTIONS,
+  SEXUAL_ORIENTATION_OPTIONS,
+  ADDICTION_OPTIONS,
 } from '@/lib/schemas/intake-schema'
 import { checkForDuplicates, SimilarPerson } from '@/lib/utils/duplicate-detection'
 import DuplicateWarningModal from './DuplicateWarningModal'
@@ -37,6 +39,11 @@ export default function IntakeForm() {
       veteran_status: false,
       disability_status: false,
       chronic_homeless: false,
+      domestic_violence_victim: false,
+      chronic_health: false,
+      mental_health: false,
+      release_of_information: false,
+      evictions: 0,
       enrollment_date: new Date().toISOString().split('T')[0],
     },
   })
@@ -92,15 +99,24 @@ export default function IntakeForm() {
             gender: data.gender,
             race: data.race,
             ethnicity: data.ethnicity,
+            sexual_orientation: data.sexual_orientation || null,
             veteran_status: data.veteran_status,
             disability_status: data.disability_status,
             disability_type: data.disability_type || null,
             chronic_homeless: data.chronic_homeless,
+            domestic_violence_victim: data.domestic_violence_victim,
+            chronic_health: data.chronic_health,
+            mental_health: data.mental_health,
+            addiction: data.addiction || null,
             living_situation: data.living_situation,
             length_of_time_homeless: data.length_of_time_homeless || null,
+            evictions: data.evictions || 0,
+            income: data.income || null,
+            support_system: data.support_system || null,
             enrollment_date: data.enrollment_date,
             case_manager: data.case_manager || null,
             referral_source: data.referral_source || null,
+            release_of_information: data.release_of_information,
             preferred_language: data.preferred_language || null,
             cultural_lived_experience: data.cultural_lived_experience || null,
           } as never,
@@ -262,6 +278,23 @@ export default function IntakeForm() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sexual Orientation
+              </label>
+              <select
+                {...register('sexual_orientation')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select sexual orientation...</option>
+                {SEXUAL_ORIENTATION_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Preferred Language
               </label>
               <input
@@ -343,6 +376,56 @@ export default function IntakeForm() {
               </label>
             </div>
 
+            <div className="flex items-center">
+              <input
+                {...register('domestic_violence_victim')}
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label className="ml-2 block text-sm text-gray-700">
+                Domestic Violence Victim
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                {...register('chronic_health')}
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label className="ml-2 block text-sm text-gray-700">
+                Chronic Health Condition
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                {...register('mental_health')}
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label className="ml-2 block text-sm text-gray-700">
+                Mental Health Condition
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Addiction / Substance Use
+              </label>
+              <select
+                {...register('addiction')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select substance...</option>
+                {ADDICTION_OPTIONS.map((option) => (
+                  <option key={option} value={option.toLowerCase()}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Living Situation <span className="text-red-500">*</span>
@@ -378,6 +461,43 @@ export default function IntakeForm() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Evictions
+              </label>
+              <input
+                {...register('evictions', { valueAsNumber: true })}
+                type="number"
+                min="0"
+                placeholder="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Income Source
+              </label>
+              <input
+                {...register('income')}
+                type="text"
+                placeholder="e.g., SSI, Employment, None"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Support System
+              </label>
+              <textarea
+                {...register('support_system')}
+                rows={3}
+                placeholder="Describe family, friends, or community support..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
           </div>
         </div>
@@ -426,6 +546,22 @@ export default function IntakeForm() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <div className="flex items-center">
+                <input
+                  {...register('release_of_information')}
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label className="ml-2 block text-sm text-gray-700">
+                  Release of Information (ROI) Signed
+                </label>
+              </div>
+              <p className="text-sm text-gray-500 mt-1 ml-6">
+                Check if client has signed authorization to share information with other providers
+              </p>
             </div>
           </div>
         </div>

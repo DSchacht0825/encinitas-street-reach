@@ -9,6 +9,7 @@ export const intakeFormSchema = z.object({
   gender: z.string().min(1, 'Gender is required'),
   race: z.string().min(1, 'Race is required'),
   ethnicity: z.string().min(1, 'Ethnicity is required'),
+  sexual_orientation: z.string().optional().nullable(),
   preferred_language: z.string().optional().nullable(),
   cultural_lived_experience: z.string().optional().nullable(),
 
@@ -17,13 +18,21 @@ export const intakeFormSchema = z.object({
   disability_status: z.boolean(),
   disability_type: z.string().optional().nullable(),
   chronic_homeless: z.boolean(),
+  domestic_violence_victim: z.boolean(),
+  chronic_health: z.boolean(),
+  mental_health: z.boolean(),
+  addiction: z.string().optional().nullable(),
   living_situation: z.string().min(1, 'Living situation is required'),
   length_of_time_homeless: z.string().optional().nullable(),
+  evictions: z.number().int().min(0).optional().nullable(),
+  income: z.string().optional().nullable(),
+  support_system: z.string().optional().nullable(),
 
   // Program Information
   enrollment_date: z.string().min(1, 'Enrollment date is required'),
   case_manager: z.string().optional().nullable(),
   referral_source: z.string().optional().nullable(),
+  release_of_information: z.boolean(),
 })
 
 export type IntakeFormData = z.infer<typeof intakeFormSchema>
@@ -98,4 +107,27 @@ export const TIME_HOMELESS_OPTIONS = [
   '5-10 years',
   'More than 10 years',
   'Unknown',
+] as const
+
+export const SEXUAL_ORIENTATION_OPTIONS = [
+  'Heterosexual/Straight',
+  'Gay',
+  'Lesbian',
+  'Bisexual',
+  'Queer',
+  'Questioning',
+  'Prefer not to say',
+  'Other',
+] as const
+
+export const ADDICTION_OPTIONS = [
+  'None',
+  'Alcohol',
+  'Cocaine',
+  'Opioids',
+  'Meth',
+  'Fentanyl',
+  'Inhalants',
+  'Multiple substances',
+  'Other',
 ] as const
