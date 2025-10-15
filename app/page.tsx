@@ -8,6 +8,9 @@ export default async function Home() {
   // Check if user is admin to show/hide dashboard link
   const userIsAdmin = await isAdmin()
 
+  // Temporary debug info
+  console.log('Home page - userIsAdmin:', userIsAdmin)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Blue Header Bar */}
@@ -32,6 +35,10 @@ export default async function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Temporary debug indicator */}
+              <div className="text-white text-xs bg-red-600 px-2 py-1 rounded">
+                Admin: {userIsAdmin ? 'YES' : 'NO'}
+              </div>
               {userIsAdmin && (
                 <Link
                   href="/dashboard"
