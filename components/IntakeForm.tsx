@@ -33,15 +33,17 @@ export default function IntakeForm() {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<IntakeFormData>({
+  } = useForm({
     resolver: zodResolver(intakeFormSchema),
     defaultValues: {
       veteran_status: false,
       disability_status: false,
+      disability_types: [] as string[],
       chronic_homeless: false,
       domestic_violence_victim: false,
       chronic_health: false,
       mental_health: false,
+      addictions: [] as string[],
       release_of_information: false,
       evictions: 0,
       enrollment_date: new Date().toISOString().split('T')[0],
@@ -102,12 +104,12 @@ export default function IntakeForm() {
             sexual_orientation: data.sexual_orientation || null,
             veteran_status: data.veteran_status,
             disability_status: data.disability_status,
-            disability_type: data.disability_type || null,
+            disability_type: data.disability_types?.length ? data.disability_types.join(',') : null,
             chronic_homeless: data.chronic_homeless,
             domestic_violence_victim: data.domestic_violence_victim,
             chronic_health: data.chronic_health,
             mental_health: data.mental_health,
-            addiction: data.addiction || null,
+            addiction: data.addictions?.length ? data.addictions.join(',') : null,
             living_situation: data.living_situation,
             length_of_time_homeless: data.length_of_time_homeless || null,
             evictions: data.evictions || 0,
@@ -346,21 +348,23 @@ export default function IntakeForm() {
                 </label>
               </div>
               {disabilityStatus && (
-                <div className="ml-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Type of Disability
+                <div className="ml-6 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type of Disability (select all that apply)
                   </label>
-                  <select
-                    {...register('disability_type')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select disability type...</option>
-                    {DISABILITY_TYPES.map((option) => (
-                      <option key={option} value={option}>
+                  {DISABILITY_TYPES.map((option) => (
+                    <div key={option} className="flex items-center">
+                      <input
+                        {...register('disability_types')}
+                        type="checkbox"
+                        value={option}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label className="ml-2 block text-sm text-gray-700">
                         {option}
-                      </option>
-                    ))}
-                  </select>
+                      </label>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -410,20 +414,24 @@ export default function IntakeForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Addiction / Substance Use
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Addiction / Substance Use (select all that apply)
               </label>
-              <select
-                {...register('addiction')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select substance...</option>
+              <div className="space-y-2">
                 {ADDICTION_OPTIONS.map((option) => (
-                  <option key={option} value={option.toLowerCase()}>
-                    {option}
-                  </option>
+                  <div key={option} className="flex items-center">
+                    <input
+                      {...register('addictions')}
+                      type="checkbox"
+                      value={option}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label className="ml-2 block text-sm text-gray-700">
+                      {option}
+                    </label>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div>

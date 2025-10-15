@@ -16,12 +16,12 @@ export const intakeFormSchema = z.object({
   // Status Information
   veteran_status: z.boolean(),
   disability_status: z.boolean(),
-  disability_type: z.string().optional().nullable(),
+  disability_types: z.array(z.string()).optional().transform(val => val ?? []),
   chronic_homeless: z.boolean(),
   domestic_violence_victim: z.boolean(),
   chronic_health: z.boolean(),
   mental_health: z.boolean(),
-  addiction: z.string().optional().nullable(),
+  addictions: z.array(z.string()).optional().transform(val => val ?? []),
   living_situation: z.string().min(1, 'Living situation is required'),
   length_of_time_homeless: z.string().optional().nullable(),
   evictions: z.number().int().min(0).optional().nullable(),
@@ -121,13 +121,11 @@ export const SEXUAL_ORIENTATION_OPTIONS = [
 ] as const
 
 export const ADDICTION_OPTIONS = [
-  'None',
   'Alcohol',
   'Cocaine',
   'Opioids',
   'Meth',
   'Fentanyl',
   'Inhalants',
-  'Multiple substances',
   'Other',
 ] as const
