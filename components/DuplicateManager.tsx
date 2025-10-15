@@ -51,9 +51,11 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
         .select('person_id')
 
       const counts: Record<number, number> = {}
-      encounters?.forEach(e => {
-        counts[e.person_id] = (counts[e.person_id] || 0) + 1
-      })
+      if (encounters) {
+        encounters.forEach((e: { person_id: number }) => {
+          counts[e.person_id] = (counts[e.person_id] || 0) + 1
+        })
+      }
       setEncounterCounts(counts)
 
       // Find potential duplicates using fuzzy matching
@@ -119,7 +121,7 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
       // Transfer all encounters from deleted person to kept person
       const { error: updateError } = await supabase
         .from('encounters')
-        .update({ person_id: keepPersonId })
+        .update({ person_id: keepPersonId } as never)
         .eq('person_id', deletePersonId)
 
       if (updateError) throw updateError

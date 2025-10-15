@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { format } from 'date-fns'
+import { redirect } from 'next/navigation'
+import { isAdmin } from '@/lib/utils/auth'
 import EncounterHeatMap from '@/components/EncounterHeatMap'
 import ExportButton from '@/components/ExportButton'
 import CustomReportBuilder from '@/components/CustomReportBuilder'
@@ -13,6 +15,12 @@ export default async function DashboardPage({
 }: {
   searchParams: { start_date?: string; end_date?: string }
 }) {
+  // Check if user is admin - redirect if not
+  const userIsAdmin = await isAdmin()
+  if (!userIsAdmin) {
+    redirect('/')
+  }
+
   const supabase = await createClient()
 
   // Parse date range from query params
