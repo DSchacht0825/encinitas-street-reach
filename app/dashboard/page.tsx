@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import EncounterHeatMap from '@/components/EncounterHeatMap'
 import ExportButton from '@/components/ExportButton'
 import CustomReportBuilder from '@/components/CustomReportBuilder'
+import DuplicateManager from '@/components/DuplicateManager'
 import LogoutButton from '@/components/LogoutButton'
 
 export default async function DashboardPage({
@@ -65,6 +66,7 @@ export default async function DashboardPage({
   }
 
   type PersonData = {
+    id: number
     client_id: string
     first_name: string
     last_name: string
@@ -406,6 +408,11 @@ export default async function DashboardPage({
         {/* Custom Report Builder */}
         <div className="mb-6">
           <CustomReportBuilder persons={allPersons} encounters={allEncounters} />
+        </div>
+
+        {/* Duplicate Manager */}
+        <div className="mb-6">
+          <DuplicateManager persons={allPersons} />
         </div>
 
         {/* Key Metrics Grid */}
