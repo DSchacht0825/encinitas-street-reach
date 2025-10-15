@@ -264,3 +264,4 @@ For issues or questions:
 Copyright © 2025 San Diego Rescue Mission
 
 Built with Claude Code
+
