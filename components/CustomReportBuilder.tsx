@@ -77,22 +77,79 @@ export default function CustomReportBuilder({
   const [includeByNameList, setIncludeByNameList] = useState(false)
   const [includeInteractionsDetail, setIncludeInteractionsDetail] = useState(false)
 
+  // Demographic breakdown selections
+  const [includeByRace, setIncludeByRace] = useState(false)
+  const [includeByEthnicity, setIncludeByEthnicity] = useState(false)
+  const [includeByGender, setIncludeByGender] = useState(false)
+  const [includeByAgeRange, setIncludeByAgeRange] = useState(false)
+  const [includeByVeteranStatus, setIncludeByVeteranStatus] = useState(false)
+  const [includeByDisabilityStatus, setIncludeByDisabilityStatus] = useState(false)
+  const [includeByLivingSituation, setIncludeByLivingSituation] = useState(false)
+
+  // Filter selections
+  const [filterVeteransOnly, setFilterVeteransOnly] = useState(false)
+  const [filterDisabledOnly, setFilterDisabledOnly] = useState(false)
+  const [filterChronicHomeless, setFilterChronicHomeless] = useState(false)
+  const [filterAgeRange, setFilterAgeRange] = useState('')
+
   const handleExport = () => {
     setIsExporting(true)
 
     try {
-      // Filter encounters by date range
-      let filteredEncounters = encounters
+      // Calculate age helper
+      const calculateAge = (dob: string): number => {
+        const birthDate = new Date(dob)
+        const today = new Date()
+        let age = today.getFullYear() - birthDate.getFullYear()
+        const monthDiff = today.getMonth() - birthDate.getMonth()
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--
+        }
+        return age
+      }
+
+      // Filter persons by demographics
+      let filteredPersons = persons
+
+      if (filterVeteransOnly) {
+        filteredPersons = filteredPersons.filter(p => p.veteran_status)
+      }
+
+      if (filterDisabledOnly) {
+        filteredPersons = filteredPersons.filter(p => p.disability_status)
+      }
+
+      if (filterChronicHomeless) {
+        filteredPersons = filteredPersons.filter(p => p.chronic_homeless)
+      }
+
+      if (filterAgeRange) {
+        filteredPersons = filteredPersons.filter(p => {
+          const age = calculateAge(p.date_of_birth)
+          switch (filterAgeRange) {
+            case '18-24': return age >= 18 && age <= 24
+            case '25-34': return age >= 25 && age <= 34
+            case '35-44': return age >= 35 && age <= 44
+            case '45-54': return age >= 45 && age <= 54
+            case '55-64': return age >= 55 && age <= 64
+            case '65+': return age >= 65
+            default: return true
+          }
+        })
+      }
+
+      // Filter encounters by date range and persons
+      const filteredPersonIds = new Set(filteredPersons.map(p => p.id))
+      let filteredEncounters = encounters.filter(e => filteredPersonIds.has(e.person_id))
+
       if (startDate && endDate) {
-        filteredEncounters = encounters.filter(
+        filteredEncounters = filteredEncounters.filter(
           e => e.service_date >= startDate && e.service_date <= endDate
         )
       }
 
-      // Calculate metrics
-      const clientsServed = startDate && endDate
-        ? new Set(filteredEncounters.map(e => e.person_id)).size
-        : persons.length
+      // Calculate metrics from filtered data
+      const clientsServed = filteredPersons.length
 
       const totalInteractions = filteredEncounters.length
       const naloxoneDistributed = filteredEncounters.filter(e => e.naloxone_distributed).length
@@ -232,18 +289,6 @@ export default function CustomReportBuilder({
         })
       }
 
-      // Calculate age helper
-      const calculateAge = (dob: string): number => {
-        const birthDate = new Date(dob)
-        const today = new Date()
-        let age = today.getFullYear() - birthDate.getFullYear()
-        const monthDiff = today.getMonth() - birthDate.getMonth()
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--
-        }
-        return age
-      }
-
       // Export by-name list if selected
       if (includeByNameList) {
         reportData.push({
@@ -316,6 +361,221 @@ export default function CustomReportBuilder({
             'Detox Referral': e.detox_referral ? 'Yes' : 'No',
             'Naloxone': e.naloxone_distributed ? 'Yes' : 'No',
             'Fentanyl Strips': e.fentanyl_test_strips_count || 0,
+          })
+        })
+      }
+
+      // Export demographic breakdowns if selected
+      if (includeByRace) {
+        const raceBreakdown = filteredPersons.reduce((acc, p) => {
+          const race = p.race || 'Unknown'
+          acc[race] = (acc[race] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY RACE ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(raceBreakdown).forEach(([race, count]) => {
+          reportData.push({
+            'Metric': race,
+            'Value': count,
+            'Description': '',
+            '': '',
+          })
+        })
+      }
+
+      if (includeByEthnicity) {
+        const ethnicityBreakdown = filteredPersons.reduce((acc, p) => {
+          const ethnicity = p.ethnicity || 'Unknown'
+          acc[ethnicity] = (acc[ethnicity] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY ETHNICITY ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(ethnicityBreakdown).forEach(([ethnicity, count]) => {
+          reportData.push({
+            'Metric': ethnicity,
+            'Value': count,
+            'Description': '',
+            '': '',
+          })
+        })
+      }
+
+      if (includeByGender) {
+        const genderBreakdown = filteredPersons.reduce((acc, p) => {
+          const gender = p.gender || 'Unknown'
+          acc[gender] = (acc[gender] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY GENDER ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(genderBreakdown).forEach(([gender, count]) => {
+          reportData.push({
+            'Metric': gender,
+            'Value': count,
+            'Description': '',
+            '': '',
+          })
+        })
+      }
+
+      if (includeByAgeRange) {
+        const ageBreakdown: Record<string, number> = {
+          '18-24': 0,
+          '25-34': 0,
+          '35-44': 0,
+          '45-54': 0,
+          '55-64': 0,
+          '65+': 0,
+        }
+
+        filteredPersons.forEach(p => {
+          const age = calculateAge(p.date_of_birth)
+          if (age >= 18 && age <= 24) ageBreakdown['18-24']++
+          else if (age >= 25 && age <= 34) ageBreakdown['25-34']++
+          else if (age >= 35 && age <= 44) ageBreakdown['35-44']++
+          else if (age >= 45 && age <= 54) ageBreakdown['45-54']++
+          else if (age >= 55 && age <= 64) ageBreakdown['55-64']++
+          else if (age >= 65) ageBreakdown['65+']++
+        })
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY AGE RANGE ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(ageBreakdown).forEach(([range, count]) => {
+          reportData.push({
+            'Metric': range,
+            'Value': count,
+            'Description': '',
+            '': '',
+          })
+        })
+      }
+
+      if (includeByVeteranStatus) {
+        const veteranBreakdown = {
+          'Veteran': filteredPersons.filter(p => p.veteran_status).length,
+          'Non-Veteran': filteredPersons.filter(p => !p.veteran_status).length,
+        }
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY VETERAN STATUS ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(veteranBreakdown).forEach(([status, count]) => {
+          reportData.push({
+            'Metric': status,
+            'Value': count,
+            'Description': '',
+            '': '',
+          })
+        })
+      }
+
+      if (includeByDisabilityStatus) {
+        const disabilityBreakdown = {
+          'Has Disability': filteredPersons.filter(p => p.disability_status).length,
+          'No Disability': filteredPersons.filter(p => !p.disability_status).length,
+        }
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY DISABILITY STATUS ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(disabilityBreakdown).forEach(([status, count]) => {
+          reportData.push({
+            'Metric': status,
+            'Value': count,
+            'Description': '',
+            '': '',
+          })
+        })
+      }
+
+      if (includeByLivingSituation) {
+        const livingSituationBreakdown = filteredPersons.reduce((acc, p) => {
+          const situation = p.living_situation || 'Unknown'
+          acc[situation] = (acc[situation] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        reportData.push({
+          'Metric': '--- BREAKDOWN BY LIVING SITUATION ---',
+          'Value': '',
+          'Description': '',
+          '': '',
+        })
+        Object.entries(livingSituationBreakdown).forEach(([situation, count]) => {
+          reportData.push({
+            'Metric': situation,
+            'Value': count,
+            'Description': '',
+            '': '',
           })
         })
       }
@@ -492,6 +752,141 @@ export default function CustomReportBuilder({
               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700 font-medium">Service Interactions Detail</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Demographic Filters */}
+      <div className="bg-white rounded-lg p-4 mb-4 border-2 border-purple-200">
+        <h4 className="font-semibold text-gray-800 mb-3">Filter Data By Demographics</h4>
+        <p className="text-sm text-gray-600 mb-3">
+          Apply filters to narrow down the data before generating the report. These filters will affect all metrics.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={filterVeteransOnly}
+              onChange={(e) => setFilterVeteransOnly(e.target.checked)}
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Veterans Only</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={filterDisabledOnly}
+              onChange={(e) => setFilterDisabledOnly(e.target.checked)}
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Disabled Only</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={filterChronicHomeless}
+              onChange={(e) => setFilterChronicHomeless(e.target.checked)}
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Chronic Homeless Only</span>
+          </label>
+
+          <div className="flex items-center space-x-2">
+            <label className="text-sm text-gray-700 min-w-fit">Age Range:</label>
+            <select
+              value={filterAgeRange}
+              onChange={(e) => setFilterAgeRange(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+            >
+              <option value="">All Ages</option>
+              <option value="18-24">18-24</option>
+              <option value="25-34">25-34</option>
+              <option value="35-44">35-44</option>
+              <option value="45-54">45-54</option>
+              <option value="55-64">55-64</option>
+              <option value="65+">65+</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Demographic Breakdowns */}
+      <div className="bg-white rounded-lg p-4 mb-4 border-2 border-blue-200">
+        <h4 className="font-semibold text-gray-800 mb-3">Include Demographic Breakdowns</h4>
+        <p className="text-sm text-gray-600 mb-3">
+          Add demographic breakdowns to the report for creating presentation charts.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeByRace}
+              onChange={(e) => setIncludeByRace(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Race</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeByEthnicity}
+              onChange={(e) => setIncludeByEthnicity(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Ethnicity</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeByGender}
+              onChange={(e) => setIncludeByGender(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Gender</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeByAgeRange}
+              onChange={(e) => setIncludeByAgeRange(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Age Range</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeByVeteranStatus}
+              onChange={(e) => setIncludeByVeteranStatus(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Veteran Status</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeByDisabilityStatus}
+              onChange={(e) => setIncludeByDisabilityStatus(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Disability Status</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              checked={includeByLivingSituation}
+              onChange={(e) => setIncludeByLivingSituation(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Breakdown by Living Situation</span>
           </label>
         </div>
       </div>
