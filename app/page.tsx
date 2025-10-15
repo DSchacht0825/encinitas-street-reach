@@ -3,19 +3,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import LogoutButton from '@/components/LogoutButton'
 import { isAdmin } from '@/lib/utils/auth'
-import { createClient } from '@/lib/supabase/server'
 
 export default async function Home() {
   // Check if user is admin to show/hide dashboard link
   const userIsAdmin = await isAdmin()
-
-  // Get debug info
-  const debugSupabase = await createClient()
-  const { data: { user } } = await debugSupabase.auth.getUser()
-  const { data: profile, error: profileError } = user ? await debugSupabase.from('user_profiles').select('*').eq('id', user.id).single() : { data: null, error: null }
-
-  // Temporary debug info
-  console.log('Home page - userIsAdmin:', userIsAdmin)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,10 +32,6 @@ export default async function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Temporary debug indicator */}
-              <div className="text-white text-xs bg-red-600 px-2 py-1 rounded">
-                Admin: {userIsAdmin ? 'YES' : 'NO'}
-              </div>
               {userIsAdmin && (
                 <Link
                   href="/dashboard"
@@ -74,18 +61,6 @@ export default async function Home() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* DEBUG INFO - TEMPORARY */}
-        <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 mb-6">
-          <h3 className="font-bold text-lg mb-2">Debug Info (Temporary)</h3>
-          <div className="space-y-1 text-sm font-mono">
-            <p><strong>User Email:</strong> {user?.email || 'Not logged in'}</p>
-            <p><strong>User ID:</strong> {user?.id || 'N/A'}</p>
-            <p><strong>Profile Data:</strong> {profile ? JSON.stringify(profile) : 'null'}</p>
-            <p><strong>Profile Error:</strong> {profileError ? JSON.stringify(profileError) : 'none'}</p>
-            <p><strong>isAdmin Result:</strong> {userIsAdmin ? 'TRUE' : 'FALSE'}</p>
-          </div>
-        </div>
-
         <ClientSearch />
       </div>
     </div>
