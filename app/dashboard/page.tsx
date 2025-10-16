@@ -50,7 +50,7 @@ export default async function DashboardPage({
   // Type assertions for Supabase data (all fields from database)
   type EncounterData = {
     service_date: string
-    person_id: number
+    person_id: string  // UUID foreign key
     outreach_location: string
     latitude: number
     longitude: number
@@ -74,7 +74,7 @@ export default async function DashboardPage({
   }
 
   type PersonData = {
-    id: number
+    id: string  // UUID from database
     client_id: string
     first_name: string
     last_name: string

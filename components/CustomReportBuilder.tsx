@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { exportToCSV } from '@/lib/utils/export-csv'
 
 interface Person {
-  id?: number
+  id: string  // UUID from database
   client_id: string
   first_name: string
   last_name: string
@@ -23,15 +23,12 @@ interface Person {
   referral_source?: string | null
   disability_status?: boolean
   disability_type?: string | null
-  chronic_health?: boolean
-  mental_health?: boolean
-  addiction?: string | null
 }
 
 interface Encounter {
-  id?: number
+  id?: string  // UUID from database
   service_date: string
-  person_id: number
+  person_id: string  // UUID foreign key
   outreach_location: string
   latitude: number
   longitude: number

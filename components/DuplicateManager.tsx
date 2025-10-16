@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 
 interface Person {
-  id: number
+  id: string  // UUID from database
   client_id: string
   first_name: string
   last_name: string
@@ -25,7 +25,7 @@ interface Person {
 interface DuplicateGroup {
   persons: Person[]
   similarity_score: number
-  encounter_counts: Record<number, number>
+  encounter_counts: Record<string, number>  // UUID keys
 }
 
 interface DuplicateManagerProps {
@@ -36,7 +36,7 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[]>([])
   const [isScanning, setIsScanning] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [encounterCounts, setEncounterCounts] = useState<Record<number, number>>({})
+  const [encounterCounts, setEncounterCounts] = useState<Record<string, number>>({})
   const [showResults, setShowResults] = useState(false)
 
   const scanForDuplicates = async () => {
@@ -50,9 +50,9 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
         .from('encounters')
         .select('person_id')
 
-      const counts: Record<number, number> = {}
+      const counts: Record<string, number> = {}
       if (encounters) {
-        encounters.forEach((e: { person_id: number }) => {
+        encounters.forEach((e: { person_id: string }) => {
           counts[e.person_id] = (counts[e.person_id] || 0) + 1
         })
       }
@@ -60,7 +60,7 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
 
       // Find potential duplicates using fuzzy matching
       const groups: DuplicateGroup[] = []
-      const processed = new Set<number>()
+      const processed = new Set<string>()
 
       for (let i = 0; i < persons.length; i++) {
         if (processed.has(persons[i].id)) continue
@@ -109,7 +109,7 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
     }
   }
 
-  const mergeDuplicates = async (keepPersonId: number, deletePersonId: number) => {
+  const mergeDuplicates = async (keepPersonId: string, deletePersonId: string) => {
     if (!confirm('Are you sure you want to merge these records? This action cannot be undone.')) {
       return
     }
@@ -146,7 +146,7 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
     }
   }
 
-  const deletePerson = async (personId: number) => {
+  const deletePerson = async (personId: string) => {
     if (!confirm('Are you sure you want to DELETE this record? All associated encounters will also be deleted. This action cannot be undone.')) {
       return
     }

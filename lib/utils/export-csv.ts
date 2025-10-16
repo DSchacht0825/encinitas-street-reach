@@ -19,7 +19,7 @@ interface Person {
 
 interface Encounter {
   service_date: string
-  person_id: number
+  person_id: string  // UUID foreign key
   outreach_location: string
   latitude: number
   longitude: number
