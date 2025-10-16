@@ -94,6 +94,22 @@ export default function CustomReportBuilder({
   const handleExport = () => {
     setIsExporting(true)
 
+    // DEBUG: Log what data we're working with
+    console.log('=== CUSTOM REPORT DEBUG ===')
+    console.log('Persons array length:', persons.length)
+    console.log('Encounters array length:', encounters.length)
+    console.log('Checkboxes selected:', {
+      includeClientsServed,
+      includeServiceInteractions,
+      includeNaloxone,
+      includeFentanylStrips,
+      includeTotalReferrals,
+      includeReferralBreakdown,
+      includeHousingPlacements,
+      includeByNameList,
+      includeInteractionsDetail
+    })
+
     try {
       // Calculate age helper
       const calculateAge = (dob: string): number => {
@@ -597,6 +613,11 @@ export default function CustomReportBuilder({
         ? `_${startDate}_to_${endDate}`
         : '_all_time'
       const filename = `custom_report${dateRange}.csv`
+
+      // DEBUG: Log report data before export
+      console.log('Report data array length:', reportData.length)
+      console.log('First 5 rows of report data:', reportData.slice(0, 5))
+      console.log('=========================')
 
       // Export to CSV
       exportToCSV(reportData, filename)
