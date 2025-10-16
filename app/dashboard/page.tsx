@@ -79,6 +79,7 @@ export default async function DashboardPage({
     first_name: string
     last_name: string
     nickname?: string | null
+    phone_number?: string | null
     date_of_birth: string
     gender: string
     race: string
@@ -90,6 +91,8 @@ export default async function DashboardPage({
     enrollment_date: string
     case_manager?: string | null
     referral_source?: string | null
+    income?: string | null
+    income_amount?: number | null
   }
 
   const allEncounters = (encounters || []) as EncounterData[]
@@ -157,6 +160,13 @@ export default async function DashboardPage({
     }, {} as Record<string, number>),
     veterans: allPersons.filter((p) => p.veteran_status).length,
     chronicallyHomeless: allPersons.filter((p) => p.chronic_homeless).length,
+    withPhoneNumber: allPersons.filter((p) => p.phone_number).length,
+    withIncome: allPersons.filter((p) => p.income_amount && p.income_amount > 0).length,
+    averageIncome: allPersons.filter((p) => p.income_amount && p.income_amount > 0).length > 0
+      ? Math.round(allPersons.reduce((sum, p) => sum + (p.income_amount || 0), 0) /
+          allPersons.filter((p) => p.income_amount && p.income_amount > 0).length)
+      : 0,
+    totalIncome: allPersons.reduce((sum, p) => sum + (p.income_amount || 0), 0),
   }
 
   // Service interaction types
@@ -701,6 +711,45 @@ export default async function DashboardPage({
                 <dd className="font-medium">{demographics.chronicallyHomeless}</dd>
               </div>
             </dl>
+          </div>
+        </div>
+
+        {/* Contact & Economic Data */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Contact & Economic Data</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-emerald-50 rounded-lg">
+              <p className="text-2xl font-bold text-emerald-600">
+                {demographics.withPhoneNumber}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">Clients with Phone</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {Math.round((demographics.withPhoneNumber / allPersons.length) * 100)}% of total
+              </p>
+            </div>
+            <div className="text-center p-4 bg-cyan-50 rounded-lg">
+              <p className="text-2xl font-bold text-cyan-600">
+                {demographics.withIncome}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">Reporting Income</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {Math.round((demographics.withIncome / allPersons.length) * 100)}% of total
+              </p>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <p className="text-2xl font-bold text-blue-600">
+                ${demographics.averageIncome.toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">Average Monthly Income</p>
+              <p className="text-xs text-gray-500 mt-1">Among those reporting</p>
+            </div>
+            <div className="text-center p-4 bg-violet-50 rounded-lg">
+              <p className="text-2xl font-bold text-violet-600">
+                ${demographics.totalIncome.toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-600 mt-1">Total Monthly Income</p>
+              <p className="text-xs text-gray-500 mt-1">All clients combined</p>
+            </div>
           </div>
         </div>
 

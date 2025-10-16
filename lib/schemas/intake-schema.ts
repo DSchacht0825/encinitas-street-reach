@@ -5,6 +5,7 @@ export const intakeFormSchema = z.object({
   first_name: z.string().min(1, 'First name is required').max(100),
   last_name: z.string().min(1, 'Last name is required').max(100),
   nickname: z.string().max(100).optional().nullable(),
+  phone_number: z.string().optional().nullable(),
   date_of_birth: z.string().min(1, 'Date of birth is required').regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   gender: z.string().min(1, 'Gender is required'),
   race: z.string().min(1, 'Race is required'),
@@ -26,6 +27,7 @@ export const intakeFormSchema = z.object({
   length_of_time_homeless: z.string().optional().nullable(),
   evictions: z.number().int().min(0).optional().nullable(),
   income: z.string().optional().nullable(),
+  income_amount: z.number().min(0).optional().nullable(),
   support_system: z.string().optional().nullable(),
 
   // Program Information
