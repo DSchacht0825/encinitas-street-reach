@@ -641,6 +641,7 @@ export default function CustomReportBuilder({
         filteredEncounters,
       })
 
+      console.log('✅ Report generated successfully - NO EXPORT CALLED')
       setIsGenerating(false)
     } catch (error) {
       console.error('Report generation error:', error)
@@ -650,6 +651,7 @@ export default function CustomReportBuilder({
   }
 
   const handleDownloadCSV = () => {
+    console.log('🚨 DOWNLOAD CSV BUTTON CLICKED - EXPORTING NOW')
     if (!generatedReport) return
 
     const dateRange = generatedReport.metadata.startDate && generatedReport.metadata.endDate
