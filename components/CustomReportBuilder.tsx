@@ -56,6 +56,32 @@ interface CustomReportBuilderProps {
   encounters: Encounter[]
 }
 
+interface GeneratedReport {
+  reportData: Record<string, unknown>[]
+  metadata: {
+    generated: string
+    dateRange: string
+    startDate: string
+    endDate: string
+  }
+  metrics: {
+    clientsServed: number
+    totalInteractions: number
+    naloxoneDistributed: number
+    fentanylTestStrips: number
+    totalReferrals: number
+    matReferrals: number
+    detoxReferrals: number
+    housingPlacements: number
+  }
+  breakdowns: {
+    matByProvider: Record<string, number>
+    detoxByProvider: Record<string, number>
+  }
+  filteredPersons: Person[]
+  filteredEncounters: Encounter[]
+}
+
 export default function CustomReportBuilder({
   persons,
   encounters,
@@ -63,7 +89,7 @@ export default function CustomReportBuilder({
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedReport, setGeneratedReport] = useState<any>(null)
+  const [generatedReport, setGeneratedReport] = useState<GeneratedReport | null>(null)
 
   // Metric selections
   const [includeClientsServed, setIncludeClientsServed] = useState(true)
@@ -1099,8 +1125,8 @@ export default function CustomReportBuilder({
                     <h6 className="text-md font-medium text-purple-700 mb-3">MAT Referrals</h6>
                     <div className="space-y-2">
                       {Object.entries(generatedReport.breakdowns.matByProvider)
-                        .sort(([, a]: any, [, b]: any) => b - a)
-                        .map(([provider, count]: any) => (
+                        .sort(([, a], [, b]) => (b as number) - (a as number))
+                        .map(([provider, count]) => (
                           <div key={provider} className="flex justify-between items-center bg-purple-50 px-4 py-3 rounded-lg border border-purple-200">
                             <span className="text-gray-700 font-medium">{provider}</span>
                             <span className="text-xl font-bold text-purple-600">{count}</span>
@@ -1114,8 +1140,8 @@ export default function CustomReportBuilder({
                     <h6 className="text-md font-medium text-red-700 mb-3">Detox Referrals</h6>
                     <div className="space-y-2">
                       {Object.entries(generatedReport.breakdowns.detoxByProvider)
-                        .sort(([, a]: any, [, b]: any) => b - a)
-                        .map(([provider, count]: any) => (
+                        .sort(([, a], [, b]) => (b as number) - (a as number))
+                        .map(([provider, count]) => (
                           <div key={provider} className="flex justify-between items-center bg-red-50 px-4 py-3 rounded-lg border border-red-200">
                             <span className="text-gray-700 font-medium">{provider}</span>
                             <span className="text-xl font-bold text-red-600">{count}</span>
