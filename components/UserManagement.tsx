@@ -31,46 +31,21 @@ export default function UserManagement() {
 
   const loadUsers = async () => {
     setIsLoading(true)
-    const supabase = createClient()
 
     try {
-      // Get all users from auth and their profiles
-      const { data: profiles, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // Call API route to get users (requires admin auth)
+      const response = await fetch('/api/admin/users')
 
-      if (profileError) throw profileError
-
-      type ProfileData = {
-        id: string
-        email: string
-        role: 'admin' | 'field_worker'
-        full_name?: string | null
-        created_at: string
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to load users')
       }
 
-      // Get auth users to show email verification status
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers()
-
-      if (authError) {
-        console.error('Could not fetch auth users:', authError)
-        // Continue with just profile data
-      }
-
-      // Combine profile and auth data
-      const combinedUsers = (profiles as ProfileData[]).map(profile => {
-        const authUser = authUsers?.find(u => u.id === profile.id)
-        return {
-          ...profile,
-          auth_created_at: authUser?.created_at || profile.created_at,
-        }
-      })
-
-      setUsers(combinedUsers as User[])
+      const data = await response.json()
+      setUsers(data.users as User[])
     } catch (error) {
       console.error('Error loading users:', error)
-      alert('Error loading users. Please try again.')
+      alert(`Error loading users: ${error instanceof Error ? error.message : 'Please try again.'}`)
     } finally {
       setIsLoading(false)
     }
@@ -84,29 +59,26 @@ export default function UserManagement() {
     }
 
     setIsProcessing(true)
-    const supabase = createClient()
 
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newEmail,
-        password: newPassword,
-        email_confirm: true,
-      })
-
-      if (authError) throw authError
-
-      // Create user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          id: authData.user.id,
+      // Call API route to create user (requires admin auth)
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: newEmail,
+          password: newPassword,
           role: newRole,
           full_name: newFullName || null,
-        } as never)
+        }),
+      })
 
-      if (profileError) throw profileError
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create user')
+      }
 
       alert('User created successfully!')
       setShowAddModal(false)
@@ -159,19 +131,23 @@ export default function UserManagement() {
     }
 
     setIsProcessing(true)
-    const supabase = createClient()
 
     try {
-      // Delete auth user (this will cascade delete the profile due to ON DELETE CASCADE)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
+      // Call API route to delete user (requires admin auth)
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      })
 
-      if (authError) throw authError
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete user')
+      }
 
       alert('User deleted successfully!')
       loadUsers()
     } catch (error) {
       console.error('Error deleting user:', error)
-      alert('Error deleting user. Please try again.')
+      alert(`Error deleting user: ${error instanceof Error ? error.message : 'Please try again.'}`)
     } finally {
       setIsProcessing(false)
     }
