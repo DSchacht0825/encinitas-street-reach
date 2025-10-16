@@ -181,12 +181,36 @@ export default function CustomReportBuilder({
       // Build custom report data
       const reportData: Record<string, unknown>[] = []
 
-      // Add report header
+      // Add report metadata using same column structure as metrics
       reportData.push({
-        'Report Type': 'Custom Data Report',
-        'Generated': new Date().toISOString(),
-        'Date Range': startDate && endDate ? `${startDate} to ${endDate}` : 'All Time',
-        '': '',
+        'Metric': '=== REPORT INFORMATION ===',
+        'Value': '',
+        'Description': '',
+      })
+      reportData.push({
+        'Metric': 'Report Type',
+        'Value': 'Custom Data Report',
+        'Description': '',
+      })
+      reportData.push({
+        'Metric': 'Generated',
+        'Value': new Date().toISOString(),
+        'Description': '',
+      })
+      reportData.push({
+        'Metric': 'Date Range',
+        'Value': startDate && endDate ? `${startDate} to ${endDate}` : 'All Time',
+        'Description': '',
+      })
+      reportData.push({
+        'Metric': '',
+        'Value': '',
+        'Description': '',
+      })
+      reportData.push({
+        'Metric': '=== METRICS ===',
+        'Value': '',
+        'Description': '',
       })
 
       // Add selected metrics
@@ -195,7 +219,6 @@ export default function CustomReportBuilder({
           'Metric': 'Clients Served',
           'Value': clientsServed,
           'Description': 'Unduplicated individuals',
-          '': '',
         })
       }
 
@@ -204,7 +227,6 @@ export default function CustomReportBuilder({
           'Metric': 'Service Interactions',
           'Value': totalInteractions,
           'Description': 'Total encounters',
-          '': '',
         })
       }
 
@@ -213,7 +235,6 @@ export default function CustomReportBuilder({
           'Metric': 'Naloxone Distributed',
           'Value': naloxoneDistributed,
           'Description': 'Kits given out',
-          '': '',
         })
       }
 
@@ -222,7 +243,6 @@ export default function CustomReportBuilder({
           'Metric': 'Fentanyl Test Strips',
           'Value': fentanylTestStrips,
           'Description': 'Total distributed',
-          '': '',
         })
       }
 
@@ -231,7 +251,6 @@ export default function CustomReportBuilder({
           'Metric': 'Total Referrals',
           'Value': totalReferrals,
           'Description': `MAT: ${matReferrals}, Detox: ${detoxReferrals}`,
-          '': '',
         })
       }
 
@@ -240,20 +259,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
           'Metric': 'MAT Referrals by Provider',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(matByProvider).forEach(([provider, count]) => {
           reportData.push({
             'Metric': `  ${provider}`,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
 
@@ -261,20 +277,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
           'Metric': 'Detox Referrals by Provider',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(detoxByProvider).forEach(([provider, count]) => {
           reportData.push({
             'Metric': `  ${provider}`,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -284,7 +297,6 @@ export default function CustomReportBuilder({
           'Metric': 'Housing Placements',
           'Value': housingPlacements,
           'Description': 'Permanent housing',
-          '': '',
         })
       }
 
@@ -294,18 +306,16 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- ACTIVE BY-NAME LIST ---',
+          'Metric': '=== ACTIVE BY-NAME LIST ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Client ID': 'Client ID',
-          'First Name': 'First Name',
-          'Last Name': 'Last Name',
+          'Metric': 'Client ID',
+          'Value': 'First Name',
+          'Description': 'Last Name',
           'Age': 'Age',
           'Gender': 'Gender',
           'Veteran': 'Veteran',
@@ -314,9 +324,9 @@ export default function CustomReportBuilder({
         })
         persons.forEach(p => {
           reportData.push({
-            'Client ID': p.client_id,
-            'First Name': p.first_name,
-            'Last Name': p.last_name,
+            'Metric': p.client_id,
+            'Value': p.first_name,
+            'Description': p.last_name,
             'Age': calculateAge(p.date_of_birth),
             'Gender': p.gender,
             'Veteran': p.veteran_status ? 'Yes' : 'No',
@@ -332,18 +342,16 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- SERVICE INTERACTIONS DETAIL ---',
+          'Metric': '=== SERVICE INTERACTIONS DETAIL ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Service Date': 'Service Date',
-          'Client ID': 'Client ID',
-          'Location': 'Location',
+          'Metric': 'Service Date',
+          'Value': 'Client ID',
+          'Description': 'Location',
           'Outreach Worker': 'Outreach Worker',
           'MAT Referral': 'MAT Referral',
           'Detox Referral': 'Detox Referral',
@@ -352,9 +360,9 @@ export default function CustomReportBuilder({
         })
         filteredEncounters.forEach(e => {
           reportData.push({
-            'Service Date': e.service_date,
-            'Client ID': e.person_id,
-            'Location': e.outreach_location,
+            'Metric': e.service_date,
+            'Value': e.person_id,
+            'Description': e.outreach_location,
             'Outreach Worker': e.outreach_worker,
             'MAT Referral': e.mat_referral ? 'Yes' : 'No',
             'Detox Referral': e.detox_referral ? 'Yes' : 'No',
@@ -376,20 +384,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY RACE ---',
+          'Metric': '=== BREAKDOWN BY RACE ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(raceBreakdown).forEach(([race, count]) => {
           reportData.push({
             'Metric': race,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -405,20 +410,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY ETHNICITY ---',
+          'Metric': '=== BREAKDOWN BY ETHNICITY ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(ethnicityBreakdown).forEach(([ethnicity, count]) => {
           reportData.push({
             'Metric': ethnicity,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -434,20 +436,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY GENDER ---',
+          'Metric': '=== BREAKDOWN BY GENDER ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(genderBreakdown).forEach(([gender, count]) => {
           reportData.push({
             'Metric': gender,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -463,20 +462,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY SEXUAL ORIENTATION ---',
+          'Metric': '=== BREAKDOWN BY SEXUAL ORIENTATION ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(sexualOrientationBreakdown).forEach(([orientation, count]) => {
           reportData.push({
             'Metric': orientation,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -505,20 +501,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY AGE RANGE ---',
+          'Metric': '=== BREAKDOWN BY AGE RANGE ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(ageBreakdown).forEach(([range, count]) => {
           reportData.push({
             'Metric': range,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -533,20 +526,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY VETERAN STATUS ---',
+          'Metric': '=== BREAKDOWN BY VETERAN STATUS ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(veteranBreakdown).forEach(([status, count]) => {
           reportData.push({
             'Metric': status,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -561,20 +551,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY DISABILITY STATUS ---',
+          'Metric': '=== BREAKDOWN BY DISABILITY STATUS ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(disabilityBreakdown).forEach(([status, count]) => {
           reportData.push({
             'Metric': status,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
@@ -590,20 +577,17 @@ export default function CustomReportBuilder({
           'Metric': '',
           'Value': '',
           'Description': '',
-          '': '',
         })
         reportData.push({
-          'Metric': '--- BREAKDOWN BY LIVING SITUATION ---',
+          'Metric': '=== BREAKDOWN BY LIVING SITUATION ===',
           'Value': '',
           'Description': '',
-          '': '',
         })
         Object.entries(livingSituationBreakdown).forEach(([situation, count]) => {
           reportData.push({
             'Metric': situation,
             'Value': count,
             'Description': '',
-            '': '',
           })
         })
       }
