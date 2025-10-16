@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
+interface UserProfile {
+  role: 'admin' | 'field_worker'
+}
+
 // GET - List all users
 export async function GET() {
   try {
@@ -18,7 +22,7 @@ export async function GET() {
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .single<UserProfile>()
 
     if (!profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
@@ -77,7 +81,7 @@ export async function POST(request: Request) {
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .single<UserProfile>()
 
     if (!profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })

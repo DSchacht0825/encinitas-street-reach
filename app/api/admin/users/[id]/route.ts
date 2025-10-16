@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
+interface UserProfile {
+  role: 'admin' | 'field_worker'
+}
+
 // DELETE - Delete user
 export async function DELETE(
   request: Request,
@@ -21,7 +25,7 @@ export async function DELETE(
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .single<UserProfile>()
 
     if (!profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
