@@ -27,24 +27,29 @@ export default async function DashboardPage({
   const startDate = searchParams.start_date || null
   const endDate = searchParams.end_date || null
 
-  // Build base query for encounters
-  let encountersQuery = supabase.from('encounters').select('*')
+  // Fetch ALL encounters for CustomReportBuilder (unfiltered)
+  const { data: allEncountersData, error: allEncountersError } = await supabase
+    .from('encounters')
+    .select('*')
+
+  // Build filtered query for dashboard metrics
+  let dashboardEncountersQuery = supabase.from('encounters').select('*')
 
   if (startDate && endDate) {
-    encountersQuery = encountersQuery
+    dashboardEncountersQuery = dashboardEncountersQuery
       .gte('service_date', startDate)
       .lte('service_date', endDate)
   }
 
-  const { data: encounters, error: encountersError } = await encountersQuery
+  const { data: encounters, error: encountersError } = await dashboardEncountersQuery
 
   // Fetch all persons
   const { data: persons, error: personsError } = await supabase
     .from('persons')
     .select('*')
 
-  if (encountersError || personsError) {
-    console.error('Dashboard data fetch error:', encountersError || personsError)
+  if (encountersError || personsError || allEncountersError) {
+    console.error('Dashboard data fetch error:', encountersError || personsError || allEncountersError)
   }
 
   // Type assertions for Supabase data (all fields from database)
@@ -96,6 +101,7 @@ export default async function DashboardPage({
   }
 
   const allEncounters = (encounters || []) as EncounterData[]
+  const allEncountersUnfiltered = (allEncountersData || []) as EncounterData[]
   const allPersons = (persons || []) as PersonData[]
 
   // Calculate clients served in date range (unique person_ids from filtered encounters)
@@ -446,7 +452,7 @@ export default async function DashboardPage({
 
         {/* Custom Report Builder */}
         <div className="mb-6">
-          <CustomReportBuilder persons={allPersons} encounters={allEncounters} />
+          <CustomReportBuilder persons={allPersons} encounters={allEncountersUnfiltered} />
         </div>
 
         {/* Duplicate Manager */}
