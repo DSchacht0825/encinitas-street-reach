@@ -90,6 +90,7 @@ export default function CustomReportBuilder({
   const [endDate, setEndDate] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedReport, setGeneratedReport] = useState<GeneratedReport | null>(null)
+  const [showReportModal, setShowReportModal] = useState(false)
 
   // Metric selections
   const [includeClientsServed, setIncludeClientsServed] = useState(true)
@@ -123,6 +124,9 @@ export default function CustomReportBuilder({
 
     // DEBUG: Log what data we're working with
     console.log('=== CUSTOM REPORT DEBUG ===')
+    console.log('Start Date:', startDate, 'Type:', typeof startDate, 'Length:', startDate.length)
+    console.log('End Date:', endDate, 'Type:', typeof endDate, 'Length:', endDate.length)
+    console.log('Date check (startDate && endDate):', !!(startDate && endDate))
     console.log('Persons array length:', persons.length)
     console.log('Encounters array length:', encounters.length)
     console.log('Checkboxes selected:', {
@@ -150,8 +154,20 @@ export default function CustomReportBuilder({
         return age
       }
 
-      // Filter persons by demographics
-      let filteredPersons = persons
+      // Filter encounters by date range FIRST
+      let filteredEncounters = encounters
+
+      if (startDate && endDate) {
+        filteredEncounters = filteredEncounters.filter(
+          e => e.service_date >= startDate && e.service_date <= endDate
+        )
+      }
+
+      // Get unique person IDs from filtered encounters
+      const personIdsWithEncounters = new Set(filteredEncounters.map(e => e.person_id))
+
+      // Filter persons by demographics AND by whether they have encounters in the date range
+      let filteredPersons = persons.filter(p => personIdsWithEncounters.has(p.id))
 
       if (filterVeteransOnly) {
         filteredPersons = filteredPersons.filter(p => p.veteran_status)
@@ -180,15 +196,9 @@ export default function CustomReportBuilder({
         })
       }
 
-      // Filter encounters by date range and persons
+      // Filter encounters to only include those for the filtered persons
       const filteredPersonIds = new Set(filteredPersons.map(p => p.id))
-      let filteredEncounters = encounters.filter(e => filteredPersonIds.has(e.person_id))
-
-      if (startDate && endDate) {
-        filteredEncounters = filteredEncounters.filter(
-          e => e.service_date >= startDate && e.service_date <= endDate
-        )
-      }
+      filteredEncounters = filteredEncounters.filter(e => filteredPersonIds.has(e.person_id))
 
       // Calculate metrics from filtered data
       const clientsServed = filteredPersons.length
@@ -668,6 +678,7 @@ export default function CustomReportBuilder({
       })
 
       console.log('✅ Report generated successfully - NO EXPORT CALLED')
+      setShowReportModal(true)
       setIsGenerating(false)
     } catch (error) {
       console.error('Report generation error:', error)
@@ -1019,23 +1030,35 @@ export default function CustomReportBuilder({
         </p>
       )}
 
-      {/* Report Display */}
-      {generatedReport && (
-        <div className="mt-8 bg-white rounded-lg p-6 border-2 border-green-300">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-2">Generated Report</h4>
-              <p className="text-sm text-gray-600">
-                Generated: {new Date(generatedReport.metadata.generated).toLocaleString()}
-              </p>
-              <p className="text-sm text-gray-600">
-                Date Range: {generatedReport.metadata.dateRange}
-              </p>
-            </div>
-            <button
-              onClick={handleDownloadCSV}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center"
-            >
+      {/* Report Modal */}
+      {showReportModal && generatedReport && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto relative">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-lg z-10">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-2xl font-bold text-gray-900 mb-2">Generated Report</h4>
+                  <p className="text-sm text-gray-600">
+                    Generated: {new Date(generatedReport.metadata.generated).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Date Range: {generatedReport.metadata.dateRange}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                  aria-label="Close modal"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <button
+                onClick={handleDownloadCSV}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center"
+              >
               <svg
                 className="w-5 h-5 mr-2"
                 fill="none"
@@ -1053,7 +1076,8 @@ export default function CustomReportBuilder({
             </button>
           </div>
 
-          {/* Key Metrics Grid */}
+          <div className="p-6">
+            {/* Key Metrics Grid */}
           {(includeClientsServed || includeServiceInteractions || includeNaloxone ||
             includeFentanylStrips || includeTotalReferrals || includeHousingPlacements) && (
             <div className="mb-8">
@@ -1269,6 +1293,8 @@ export default function CustomReportBuilder({
           {/* Demographic Breakdowns would go here - similar pattern */}
           {/* I'll add these if needed, keeping the message shorter for now */}
 
+          </div>
+        </div>
         </div>
       )}
     </div>
