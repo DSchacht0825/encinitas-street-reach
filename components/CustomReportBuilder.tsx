@@ -158,8 +158,19 @@ export default function CustomReportBuilder({
       let filteredEncounters = encounters
 
       if (startDate && endDate) {
+        // Both dates provided: filter between range
         filteredEncounters = filteredEncounters.filter(
           e => e.service_date >= startDate && e.service_date <= endDate
+        )
+      } else if (startDate) {
+        // Only start date: filter from start date onwards
+        filteredEncounters = filteredEncounters.filter(
+          e => e.service_date >= startDate
+        )
+      } else if (endDate) {
+        // Only end date: filter up to end date
+        filteredEncounters = filteredEncounters.filter(
+          e => e.service_date <= endDate
         )
       }
 
@@ -250,9 +261,19 @@ export default function CustomReportBuilder({
         'Value': new Date().toISOString(),
         'Description': '',
       })
+      // Determine date range text
+      let dateRangeText = 'All Time'
+      if (startDate && endDate) {
+        dateRangeText = `${startDate} to ${endDate}`
+      } else if (startDate) {
+        dateRangeText = `From ${startDate}`
+      } else if (endDate) {
+        dateRangeText = `Up to ${endDate}`
+      }
+
       reportData.push({
         'Metric': 'Date Range',
-        'Value': startDate && endDate ? `${startDate} to ${endDate}` : 'All Time',
+        'Value': dateRangeText,
         'Description': '',
       })
       reportData.push({
@@ -655,7 +676,7 @@ export default function CustomReportBuilder({
         reportData,
         metadata: {
           generated: new Date().toISOString(),
-          dateRange: startDate && endDate ? `${startDate} to ${endDate}` : 'All Time',
+          dateRange: dateRangeText,
           startDate,
           endDate,
         },
@@ -691,9 +712,14 @@ export default function CustomReportBuilder({
     console.log('🚨 DOWNLOAD CSV BUTTON CLICKED - EXPORTING NOW')
     if (!generatedReport) return
 
-    const dateRange = generatedReport.metadata.startDate && generatedReport.metadata.endDate
-      ? `_${generatedReport.metadata.startDate}_to_${generatedReport.metadata.endDate}`
-      : '_all_time'
+    let dateRange = '_all_time'
+    if (generatedReport.metadata.startDate && generatedReport.metadata.endDate) {
+      dateRange = `_${generatedReport.metadata.startDate}_to_${generatedReport.metadata.endDate}`
+    } else if (generatedReport.metadata.startDate) {
+      dateRange = `_from_${generatedReport.metadata.startDate}`
+    } else if (generatedReport.metadata.endDate) {
+      dateRange = `_up_to_${generatedReport.metadata.endDate}`
+    }
     const filename = `custom_report${dateRange}.csv`
 
     exportToCSV(generatedReport.reportData, filename)
