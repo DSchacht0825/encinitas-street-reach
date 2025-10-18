@@ -1340,8 +1340,217 @@ export default function CustomReportBuilder({
             </div>
           )}
 
-          {/* Demographic Breakdowns would go here - similar pattern */}
-          {/* I'll add these if needed, keeping the message shorter for now */}
+          {/* Demographic Breakdowns */}
+          {(includeByRace || includeByEthnicity || includeByGender || includeBySexualOrientation ||
+            includeByAgeRange || includeByVeteranStatus || includeByDisabilityStatus || includeByLivingSituation) && (
+            <div className="mb-8">
+              <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Demographic Breakdowns
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Race Breakdown */}
+                {includeByRace && (
+                  <div>
+                    <h6 className="text-md font-medium text-blue-700 mb-3">By Race</h6>
+                    <div className="space-y-2">
+                      {Object.entries(
+                        generatedReport.filteredPersons.reduce((acc, p) => {
+                          const race = p.race || 'Unknown'
+                          acc[race] = (acc[race] || 0) + 1
+                          return acc
+                        }, {} as Record<string, number>)
+                      )
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([race, count]) => (
+                          <div key={race} className="flex justify-between items-center bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+                            <span className="text-gray-700 font-medium">{race}</span>
+                            <span className="text-xl font-bold text-blue-600">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Ethnicity Breakdown */}
+                {includeByEthnicity && (
+                  <div>
+                    <h6 className="text-md font-medium text-indigo-700 mb-3">By Ethnicity</h6>
+                    <div className="space-y-2">
+                      {Object.entries(
+                        generatedReport.filteredPersons.reduce((acc, p) => {
+                          const ethnicity = p.ethnicity || 'Unknown'
+                          acc[ethnicity] = (acc[ethnicity] || 0) + 1
+                          return acc
+                        }, {} as Record<string, number>)
+                      )
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([ethnicity, count]) => (
+                          <div key={ethnicity} className="flex justify-between items-center bg-indigo-50 px-4 py-3 rounded-lg border border-indigo-200">
+                            <span className="text-gray-700 font-medium">{ethnicity}</span>
+                            <span className="text-xl font-bold text-indigo-600">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Gender Breakdown */}
+                {includeByGender && (
+                  <div>
+                    <h6 className="text-md font-medium text-pink-700 mb-3">By Gender</h6>
+                    <div className="space-y-2">
+                      {Object.entries(
+                        generatedReport.filteredPersons.reduce((acc, p) => {
+                          const gender = p.gender || 'Unknown'
+                          acc[gender] = (acc[gender] || 0) + 1
+                          return acc
+                        }, {} as Record<string, number>)
+                      )
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([gender, count]) => (
+                          <div key={gender} className="flex justify-between items-center bg-pink-50 px-4 py-3 rounded-lg border border-pink-200">
+                            <span className="text-gray-700 font-medium">{gender}</span>
+                            <span className="text-xl font-bold text-pink-600">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sexual Orientation Breakdown */}
+                {includeBySexualOrientation && (
+                  <div>
+                    <h6 className="text-md font-medium text-violet-700 mb-3">By Sexual Orientation</h6>
+                    <div className="space-y-2">
+                      {Object.entries(
+                        generatedReport.filteredPersons.reduce((acc, p) => {
+                          const orientation = p.sexual_orientation || 'Not specified'
+                          acc[orientation] = (acc[orientation] || 0) + 1
+                          return acc
+                        }, {} as Record<string, number>)
+                      )
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([orientation, count]) => (
+                          <div key={orientation} className="flex justify-between items-center bg-violet-50 px-4 py-3 rounded-lg border border-violet-200">
+                            <span className="text-gray-700 font-medium">{orientation}</span>
+                            <span className="text-xl font-bold text-violet-600">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Age Range Breakdown */}
+                {includeByAgeRange && (
+                  <div>
+                    <h6 className="text-md font-medium text-orange-700 mb-3">By Age Range</h6>
+                    <div className="space-y-2">
+                      {(() => {
+                        const calculateAge = (dob: string): number => {
+                          const birthDate = new Date(dob)
+                          const today = new Date()
+                          let age = today.getFullYear() - birthDate.getFullYear()
+                          const monthDiff = today.getMonth() - birthDate.getMonth()
+                          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                            age--
+                          }
+                          return age
+                        }
+
+                        const ageBreakdown: Record<string, number> = {
+                          '18-24': 0,
+                          '25-34': 0,
+                          '35-44': 0,
+                          '45-54': 0,
+                          '55-64': 0,
+                          '65+': 0,
+                        }
+
+                        generatedReport.filteredPersons.forEach(p => {
+                          const age = calculateAge(p.date_of_birth)
+                          if (age >= 18 && age <= 24) ageBreakdown['18-24']++
+                          else if (age >= 25 && age <= 34) ageBreakdown['25-34']++
+                          else if (age >= 35 && age <= 44) ageBreakdown['35-44']++
+                          else if (age >= 45 && age <= 54) ageBreakdown['45-54']++
+                          else if (age >= 55 && age <= 64) ageBreakdown['55-64']++
+                          else if (age >= 65) ageBreakdown['65+']++
+                        })
+
+                        return Object.entries(ageBreakdown).map(([range, count]) => (
+                          <div key={range} className="flex justify-between items-center bg-orange-50 px-4 py-3 rounded-lg border border-orange-200">
+                            <span className="text-gray-700 font-medium">{range}</span>
+                            <span className="text-xl font-bold text-orange-600">{count}</span>
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Veteran Status Breakdown */}
+                {includeByVeteranStatus && (
+                  <div>
+                    <h6 className="text-md font-medium text-blue-700 mb-3">By Veteran Status</h6>
+                    <div className="space-y-2">
+                      {Object.entries({
+                        'Veteran': generatedReport.filteredPersons.filter(p => p.veteran_status).length,
+                        'Non-Veteran': generatedReport.filteredPersons.filter(p => !p.veteran_status).length,
+                      }).map(([status, count]) => (
+                        <div key={status} className="flex justify-between items-center bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+                          <span className="text-gray-700 font-medium">{status}</span>
+                          <span className="text-xl font-bold text-blue-600">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Disability Status Breakdown */}
+                {includeByDisabilityStatus && (
+                  <div>
+                    <h6 className="text-md font-medium text-amber-700 mb-3">By Disability Status</h6>
+                    <div className="space-y-2">
+                      {Object.entries({
+                        'Has Disability': generatedReport.filteredPersons.filter(p => p.disability_status).length,
+                        'No Disability': generatedReport.filteredPersons.filter(p => !p.disability_status).length,
+                      }).map(([status, count]) => (
+                        <div key={status} className="flex justify-between items-center bg-amber-50 px-4 py-3 rounded-lg border border-amber-200">
+                          <span className="text-gray-700 font-medium">{status}</span>
+                          <span className="text-xl font-bold text-amber-600">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Living Situation Breakdown */}
+                {includeByLivingSituation && (
+                  <div>
+                    <h6 className="text-md font-medium text-teal-700 mb-3">By Living Situation</h6>
+                    <div className="space-y-2">
+                      {Object.entries(
+                        generatedReport.filteredPersons.reduce((acc, p) => {
+                          const situation = p.living_situation || 'Unknown'
+                          acc[situation] = (acc[situation] || 0) + 1
+                          return acc
+                        }, {} as Record<string, number>)
+                      )
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([situation, count]) => (
+                          <div key={situation} className="flex justify-between items-center bg-teal-50 px-4 py-3 rounded-lg border border-teal-200">
+                            <span className="text-gray-700 font-medium">{situation}</span>
+                            <span className="text-xl font-bold text-teal-600">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           </div>
         </div>
