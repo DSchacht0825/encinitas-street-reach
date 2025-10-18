@@ -157,6 +157,13 @@ export default function CustomReportBuilder({
       // Filter encounters by date range FIRST
       let filteredEncounters = encounters
 
+      console.log('🔍 DATE FILTERING DEBUG:')
+      console.log('  - Start date filter:', startDate)
+      console.log('  - End date filter:', endDate)
+      console.log('  - Sample service_date values from database (first 5):',
+        encounters.slice(0, 5).map(e => e.service_date)
+      )
+
       if (startDate && endDate) {
         // Both dates provided: filter between range
         filteredEncounters = filteredEncounters.filter(
