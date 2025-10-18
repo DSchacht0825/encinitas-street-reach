@@ -177,19 +177,30 @@ export default function CustomReportBuilder({
       // Get unique person IDs from filtered encounters
       const personIdsWithEncounters = new Set(filteredEncounters.map(e => e.person_id))
 
+      console.log('📊 FILTERING DEBUG:')
+      console.log('  - Filtered encounters count:', filteredEncounters.length)
+      console.log('  - Unique person IDs from encounters:', personIdsWithEncounters.size)
+      console.log('  - Sample encounter person_ids (first 3):', filteredEncounters.slice(0, 3).map(e => e.person_id))
+      console.log('  - Sample person ids from database (first 3):', persons.slice(0, 3).map(p => p.id))
+
       // Filter persons by demographics AND by whether they have encounters in the date range
       let filteredPersons = persons.filter(p => personIdsWithEncounters.has(p.id))
 
+      console.log('  - Persons after encounter filter:', filteredPersons.length)
+
       if (filterVeteransOnly) {
         filteredPersons = filteredPersons.filter(p => p.veteran_status)
+        console.log('  - After veterans filter:', filteredPersons.length)
       }
 
       if (filterDisabledOnly) {
         filteredPersons = filteredPersons.filter(p => p.disability_status)
+        console.log('  - After disabled filter:', filteredPersons.length)
       }
 
       if (filterChronicHomeless) {
         filteredPersons = filteredPersons.filter(p => p.chronic_homeless)
+        console.log('  - After chronic homeless filter:', filteredPersons.length)
       }
 
       if (filterAgeRange) {
@@ -205,11 +216,16 @@ export default function CustomReportBuilder({
             default: return true
           }
         })
+        console.log('  - After age range filter:', filteredPersons.length)
       }
+
+      console.log('  - FINAL filtered persons count:', filteredPersons.length)
 
       // Filter encounters to only include those for the filtered persons
       const filteredPersonIds = new Set(filteredPersons.map(p => p.id))
       filteredEncounters = filteredEncounters.filter(e => filteredPersonIds.has(e.person_id))
+
+      console.log('  - FINAL filtered encounters count:', filteredEncounters.length)
 
       // Calculate metrics from filtered data
       const clientsServed = filteredPersons.length
