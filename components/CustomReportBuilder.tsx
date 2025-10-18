@@ -166,18 +166,19 @@ export default function CustomReportBuilder({
 
       if (startDate && endDate) {
         // Both dates provided: filter between range
+        // Extract YYYY-MM-DD from ISO timestamp for comparison
         filteredEncounters = filteredEncounters.filter(
-          e => e.service_date >= startDate && e.service_date <= endDate
+          e => e.service_date.substring(0, 10) >= startDate && e.service_date.substring(0, 10) <= endDate
         )
       } else if (startDate) {
         // Only start date: filter from start date onwards
         filteredEncounters = filteredEncounters.filter(
-          e => e.service_date >= startDate
+          e => e.service_date.substring(0, 10) >= startDate
         )
       } else if (endDate) {
         // Only end date: filter up to end date
         filteredEncounters = filteredEncounters.filter(
-          e => e.service_date <= endDate
+          e => e.service_date.substring(0, 10) <= endDate
         )
       }
 
