@@ -9,7 +9,6 @@ import {
   LIVING_SITUATIONS,
   GENDER_OPTIONS,
   RACE_OPTIONS,
-  ETHNICITY_OPTIONS,
   DISABILITY_TYPES,
   REFERRAL_SOURCES,
   TIME_HOMELESS_OPTIONS,
@@ -335,6 +334,7 @@ export default function IntakeForm() {
             {photoPreview && (
               <div className="space-y-4">
                 <div className="relative w-full max-w-md mx-auto">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photoPreview}
                     alt="Client photo preview"

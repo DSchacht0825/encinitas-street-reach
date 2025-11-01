@@ -48,7 +48,7 @@ export default function ExitProgramModal({
           exit_date: data.exit_date,
           exit_destination: data.exit_destination,
           exit_notes: data.exit_notes || null,
-        })
+        } as never)
         .eq('id', personId)
 
       if (error) throw error
