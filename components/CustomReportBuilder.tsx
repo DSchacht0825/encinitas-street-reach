@@ -268,7 +268,7 @@ export default function CustomReportBuilder({
               : true
 
         // Check if destination is permanent housing
-        const isPermanentHousing = permanentHousingDestinations.includes(p.exit_destination as any)
+        const isPermanentHousing = permanentHousingDestinations.includes(p.exit_destination)
 
         return inDateRange && isPermanentHousing
       }).length
