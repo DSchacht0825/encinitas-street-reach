@@ -86,8 +86,8 @@ interface GeneratedReport {
   filteredEncounters: Encounter[]
   housingDebugInfo?: Array<{
     name: string
-    exit_date: string | null
-    exit_destination: string | null
+    exit_date: string | null | undefined
+    exit_destination: string | null | undefined
     exitDateStr: string
     inDateRange: boolean
     isPermanentHousing: boolean
