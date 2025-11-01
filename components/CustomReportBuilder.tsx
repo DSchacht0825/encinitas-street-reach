@@ -84,15 +84,6 @@ interface GeneratedReport {
   }
   filteredPersons: Person[]
   filteredEncounters: Encounter[]
-  housingDebugInfo?: Array<{
-    name: string
-    exit_date: string | null | undefined
-    exit_destination: string | null | undefined
-    exitDateStr: string
-    inDateRange: boolean
-    isPermanentHousing: boolean
-    included: boolean
-  }>
 }
 
 export default function CustomReportBuilder({
@@ -136,23 +127,6 @@ export default function CustomReportBuilder({
     setIsGenerating(true)
 
     // DEBUG: Log what data we're working with
-    console.log('=== CUSTOM REPORT DEBUG ===')
-    console.log('Start Date:', startDate, 'Type:', typeof startDate, 'Length:', startDate.length)
-    console.log('End Date:', endDate, 'Type:', typeof endDate, 'Length:', endDate.length)
-    console.log('Date check (startDate && endDate):', !!(startDate && endDate))
-    console.log('Persons array length:', persons.length)
-    console.log('Encounters array length:', encounters.length)
-    console.log('Checkboxes selected:', {
-      includeClientsServed,
-      includeServiceInteractions,
-      includeNaloxone,
-      includeFentanylStrips,
-      includeTotalReferrals,
-      includeReferralBreakdown,
-      includeHousingPlacements,
-      includeByNameList,
-      includeInteractionsDetail
-    })
 
     try {
       // Calculate age helper
@@ -170,12 +144,6 @@ export default function CustomReportBuilder({
       // Filter encounters by date range FIRST
       let filteredEncounters = encounters
 
-      console.log('🔍 DATE FILTERING DEBUG:')
-      console.log('  - Start date filter:', startDate)
-      console.log('  - End date filter:', endDate)
-      console.log('  - Sample service_date values from database (first 5):',
-        encounters.slice(0, 5).map(e => e.service_date)
-      )
 
       if (startDate && endDate) {
         // Both dates provided: filter between range
@@ -199,21 +167,6 @@ export default function CustomReportBuilder({
       const personIdsWithEncounters = new Set(filteredEncounters.map(e => e.person_id))
 
       // Get person IDs with exits in the date range
-      console.log('🔍 EXIT FIELD CHECK:')
-      console.log('  - Total persons:', persons.length)
-      console.log('  - Sample person fields (first person):', persons[0] ? Object.keys(persons[0]) : 'No persons')
-      console.log('  - Persons with exit_date field:', persons.filter(p => 'exit_date' in p).length)
-      console.log('  - Persons with non-null exit_date:', persons.filter(p => p.exit_date).length)
-      persons.forEach((p, idx) => {
-        if (p.exit_date) {
-          console.log(`  - Person ${idx} (${p.first_name} ${p.last_name}):`, {
-            exit_date: p.exit_date,
-            exit_destination: p.exit_destination,
-            has_field: 'exit_date' in p
-          })
-        }
-      })
-
       const personIdsWithExits = new Set(
         persons
           .filter(p => {
@@ -231,33 +184,23 @@ export default function CustomReportBuilder({
           .map(p => p.id)
       )
 
-      console.log('📊 FILTERING DEBUG:')
-      console.log('  - Filtered encounters count:', filteredEncounters.length)
-      console.log('  - Unique person IDs from encounters:', personIdsWithEncounters.size)
-      console.log('  - Unique person IDs from exits:', personIdsWithExits.size)
-      console.log('  - Sample encounter person_ids (first 3):', filteredEncounters.slice(0, 3).map(e => e.person_id))
-      console.log('  - Sample person ids from database (first 3):', persons.slice(0, 3).map(p => p.id))
 
       // Filter persons by demographics AND by whether they have encounters OR exits in the date range
       let filteredPersons = persons.filter(p =>
         personIdsWithEncounters.has(p.id) || personIdsWithExits.has(p.id)
       )
 
-      console.log('  - Persons after encounter filter:', filteredPersons.length)
 
       if (filterVeteransOnly) {
         filteredPersons = filteredPersons.filter(p => p.veteran_status)
-        console.log('  - After veterans filter:', filteredPersons.length)
       }
 
       if (filterDisabledOnly) {
         filteredPersons = filteredPersons.filter(p => p.disability_status)
-        console.log('  - After disabled filter:', filteredPersons.length)
       }
 
       if (filterChronicHomeless) {
         filteredPersons = filteredPersons.filter(p => p.chronic_homeless)
-        console.log('  - After chronic homeless filter:', filteredPersons.length)
       }
 
       if (filterAgeRange) {
@@ -273,16 +216,11 @@ export default function CustomReportBuilder({
             default: return true
           }
         })
-        console.log('  - After age range filter:', filteredPersons.length)
       }
-
-      console.log('  - FINAL filtered persons count:', filteredPersons.length)
 
       // Filter encounters to only include those for the filtered persons
       const filteredPersonIds = new Set(filteredPersons.map(p => p.id))
       filteredEncounters = filteredEncounters.filter(e => filteredPersonIds.has(e.person_id))
-
-      console.log('  - FINAL filtered encounters count:', filteredEncounters.length)
 
       // Calculate metrics from filtered data
       const clientsServed = filteredPersons.length
@@ -299,18 +237,6 @@ export default function CustomReportBuilder({
 
       // Calculate housing placements from program exits to permanent housing
       const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing'] as readonly string[]
-
-      console.log('🏠 HOUSING PLACEMENTS DEBUG:')
-      console.log('  - Permanent housing destinations:', permanentHousingDestinations)
-      console.log('  - Filtered persons count:', filteredPersons.length)
-      console.log('  - Persons with exit_date:', filteredPersons.filter(p => p.exit_date).length)
-      console.log('  - All exits in filtered persons:', filteredPersons.filter(p => p.exit_date).map(p => ({
-        name: `${p.first_name} ${p.last_name}`,
-        exit_date: p.exit_date,
-        exit_destination: p.exit_destination,
-        exit_date_str: p.exit_date?.substring(0, 10)
-      })))
-
       const housingPlacements = filteredPersons.filter(p => {
         if (!p.exit_date || !p.exit_destination) return false
 
@@ -327,44 +253,8 @@ export default function CustomReportBuilder({
         // Check if destination is permanent housing
         const isPermanentHousing = permanentHousingDestinations.includes(p.exit_destination)
 
-        console.log(`  - Checking ${p.first_name} ${p.last_name}:`, {
-          exitDateStr,
-          startDate,
-          endDate,
-          inDateRange,
-          exit_destination: p.exit_destination,
-          isPermanentHousing
-        })
-
         return inDateRange && isPermanentHousing
       }).length
-
-      console.log('  - Final housing placements count:', housingPlacements)
-
-      // Create debug info for housing placements (visible in UI)
-      const housingDebugInfo = filteredPersons
-        .filter(p => p.exit_date)
-        .map(p => {
-          const exitDateStr = p.exit_date!.substring(0, 10)
-          const inDateRange = startDate && endDate
-            ? (exitDateStr >= startDate && exitDateStr <= endDate)
-            : startDate
-              ? exitDateStr >= startDate
-              : endDate
-                ? exitDateStr <= endDate
-                : true
-          const isPermanentHousing = permanentHousingDestinations.includes(p.exit_destination || '')
-
-          return {
-            name: `${p.first_name} ${p.last_name}`,
-            exit_date: p.exit_date,
-            exit_destination: p.exit_destination,
-            exitDateStr,
-            inDateRange,
-            isPermanentHousing,
-            included: inDateRange && isPermanentHousing
-          }
-        })
 
       // Build referral breakdown
       const matByProvider = filteredEncounters
@@ -807,11 +697,6 @@ export default function CustomReportBuilder({
         })
       }
 
-      // DEBUG: Log report data before display
-      console.log('Report data array length:', reportData.length)
-      console.log('First 5 rows of report data:', reportData.slice(0, 5))
-      console.log('=========================')
-
       // Store the generated report data to display
       setGeneratedReport({
         reportData,
@@ -837,10 +722,8 @@ export default function CustomReportBuilder({
         },
         filteredPersons,
         filteredEncounters,
-        housingDebugInfo,
       })
 
-      console.log('✅ Report generated successfully - NO EXPORT CALLED')
       setShowReportModal(true)
       setIsGenerating(false)
     } catch (error) {
@@ -1299,25 +1182,6 @@ export default function CustomReportBuilder({
                   </div>
                 )}
               </div>
-
-              {/* Housing Placements Debug Info */}
-              {includeHousingPlacements && generatedReport.housingDebugInfo && generatedReport.housingDebugInfo.length > 0 && (
-                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h6 className="text-sm font-semibold text-yellow-900 mb-3">🔍 Housing Placements Debug Info</h6>
-                  <div className="space-y-2 text-xs">
-                    {generatedReport.housingDebugInfo.map((debug, idx) => (
-                      <div key={idx} className={`p-2 rounded ${debug.included ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
-                        <p className="font-semibold">{debug.name}</p>
-                        <p>Exit Date: {debug.exit_date} (parsed as: {debug.exitDateStr})</p>
-                        <p>Exit Destination: {debug.exit_destination}</p>
-                        <p>In Date Range ({generatedReport.metadata.startDate} to {generatedReport.metadata.endDate}): {debug.inDateRange ? '✓ YES' : '✗ NO'}</p>
-                        <p>Is Permanent Housing: {debug.isPermanentHousing ? '✓ YES' : '✗ NO'}</p>
-                        <p className="font-semibold mt-1">Counted: {debug.included ? '✓ YES' : '✗ NO'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

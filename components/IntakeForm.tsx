@@ -203,6 +203,10 @@ export default function IntakeForm() {
         photoUrl = await uploadPhoto(photoFile)
       }
 
+      // Ensure dates are in YYYY-MM-DD format without timezone conversion
+      const dateOfBirth = data.date_of_birth || null
+      const enrollmentDate = data.enrollment_date // Already in YYYY-MM-DD from date input
+
       const { data: result, error } = await supabase
         .from('persons')
         .insert([
@@ -212,7 +216,7 @@ export default function IntakeForm() {
             last_name: data.last_name,
             nickname: data.nickname || null,
             phone_number: data.phone_number || null,
-            date_of_birth: data.date_of_birth || null,
+            date_of_birth: dateOfBirth,
             gender: data.gender,
             race: data.race,
             ethnicity: data.ethnicity,
@@ -231,7 +235,7 @@ export default function IntakeForm() {
             income: data.income || null,
             income_amount: data.income_amount || null,
             support_system: data.support_system || null,
-            enrollment_date: data.enrollment_date,
+            enrollment_date: enrollmentDate,
             case_manager: data.case_manager || null,
             referral_source: data.referral_source || null,
             release_of_information: data.release_of_information,

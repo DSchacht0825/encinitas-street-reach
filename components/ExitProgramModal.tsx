@@ -42,10 +42,13 @@ export default function ExitProgramModal({
     const supabase = createClient()
 
     try {
+      // Ensure date is in YYYY-MM-DD format without timezone conversion
+      const exitDate = data.exit_date // Already in YYYY-MM-DD from date input
+
       const { error } = await supabase
         .from('persons')
         .update({
-          exit_date: data.exit_date,
+          exit_date: exitDate,
           exit_destination: data.exit_destination,
           exit_notes: data.exit_notes || null,
         } as never)
