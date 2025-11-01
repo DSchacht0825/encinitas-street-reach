@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
+import ExitProgramButton from '@/components/ExitProgramButton'
 
 function calculateAge(dob: string): number {
   const birthDate = new Date(dob)
@@ -47,6 +48,9 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
     enrollment_date: string
     case_manager?: string | null
     referral_source?: string | null
+    exit_date?: string | null
+    exit_destination?: string | null
+    exit_notes?: string | null
   }
 
   // Fetch encounters count and data
@@ -147,25 +151,36 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
               Client ID: {person.client_id}
             </p>
           </div>
-          <Link
-            href={`/client/${params.id}/encounter/new`}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            New Service Interaction
-          </Link>
+          <div className="flex gap-3">
+            {!person.exit_date && (
+              <Link
+                href={`/client/${params.id}/encounter/new`}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                New Service Interaction
+              </Link>
+            )}
+            <ExitProgramButton
+              personId={person.id}
+              personName={`${person.first_name} ${person.last_name}`}
+              hasExited={!!person.exit_date}
+              exitDate={person.exit_date}
+              exitDestination={person.exit_destination}
+            />
+          </div>
         </div>
 
         {/* Client Information */}
@@ -239,6 +254,14 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
             </dl>
           </div>
         </div>
+
+        {/* Exit Information - Show if client has exited */}
+        {person.exit_date && person.exit_notes && (
+          <div className="bg-red-50 border border-red-200 rounded-lg shadow p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-red-900">Exit Notes</h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{person.exit_notes}</p>
+          </div>
+        )}
 
         {/* Interaction Timeline */}
         <div className="bg-white rounded-lg shadow p-8">
