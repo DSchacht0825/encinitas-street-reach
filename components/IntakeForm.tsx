@@ -142,7 +142,11 @@ export default function IntakeForm() {
         .from('client-photos')
         .upload(filePath, file)
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError)
+        alert('Photo upload failed. Client will be created without photo.')
+        return null
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('client-photos')
@@ -151,6 +155,7 @@ export default function IntakeForm() {
       return publicUrl
     } catch (error) {
       console.error('Error uploading photo:', error)
+      alert('Photo upload failed. Client will be created without photo.')
       return null
     } finally {
       setIsUploadingPhoto(false)
@@ -207,7 +212,7 @@ export default function IntakeForm() {
             last_name: data.last_name,
             nickname: data.nickname || null,
             phone_number: data.phone_number || null,
-            date_of_birth: data.date_of_birth,
+            date_of_birth: data.date_of_birth || null,
             gender: data.gender,
             race: data.race,
             ethnicity: data.ethnicity,
@@ -246,7 +251,8 @@ export default function IntakeForm() {
       router.push(`/client/${newPerson.id}`)
     } catch (error) {
       console.error('Error creating person:', error)
-      alert('Error creating person. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Error creating person: ${errorMessage}. Please check all fields and try again.`)
     } finally {
       setIsSubmitting(false)
     }
