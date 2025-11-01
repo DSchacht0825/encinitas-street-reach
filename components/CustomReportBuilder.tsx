@@ -77,10 +77,12 @@ interface GeneratedReport {
     matReferrals: number
     detoxReferrals: number
     housingPlacements: number
+    programExits: number
   }
   breakdowns: {
     matByProvider: Record<string, number>
     detoxByProvider: Record<string, number>
+    exitsByCategory: Record<string, { total: number, destinations: Record<string, number> }>
   }
   filteredPersons: Person[]
   filteredEncounters: Encounter[]
@@ -95,6 +97,8 @@ export default function CustomReportBuilder({
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedReport, setGeneratedReport] = useState<GeneratedReport | null>(null)
   const [showReportModal, setShowReportModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [detailModalType, setDetailModalType] = useState<string>('')
 
   // Metric selections
   const [includeClientsServed, setIncludeClientsServed] = useState(true)
@@ -255,6 +259,44 @@ export default function CustomReportBuilder({
 
         return inDateRange && isPermanentHousing
       }).length
+
+      // Calculate program exits breakdown by category
+      const personsWithExits = filteredPersons.filter(p => {
+        if (!p.exit_date || !p.exit_destination) return false
+        const exitDateStr = p.exit_date.substring(0, 10)
+        const inDateRange = startDate && endDate
+          ? (exitDateStr >= startDate && exitDateStr <= endDate)
+          : startDate
+            ? exitDateStr >= startDate
+            : endDate
+              ? exitDateStr <= endDate
+              : true
+        return inDateRange
+      })
+
+      const programExits = personsWithExits.length
+
+      const exitsByCategory = Object.entries(EXIT_DESTINATIONS).reduce((acc, [category, destinations]) => {
+        const categoryDestinations: Record<string, number> = {}
+        let categoryTotal = 0
+
+        destinations.forEach(destination => {
+          const count = personsWithExits.filter(p => p.exit_destination === destination).length
+          if (count > 0) {
+            categoryDestinations[destination] = count
+            categoryTotal += count
+          }
+        })
+
+        if (categoryTotal > 0) {
+          acc[category] = {
+            total: categoryTotal,
+            destinations: categoryDestinations
+          }
+        }
+
+        return acc
+      }, {} as Record<string, { total: number, destinations: Record<string, number> }>)
 
       // Build referral breakdown
       const matByProvider = filteredEncounters
@@ -715,10 +757,12 @@ export default function CustomReportBuilder({
           matReferrals,
           detoxReferrals,
           housingPlacements,
+          programExits,
         },
         breakdowns: {
           matByProvider,
           detoxByProvider,
+          exitsByCategory,
         },
         filteredPersons,
         filteredEncounters,
@@ -1175,10 +1219,29 @@ export default function CustomReportBuilder({
                   </div>
                 )}
                 {includeHousingPlacements && (
-                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-4 border border-teal-200">
+                  <div
+                    onClick={() => {
+                      setDetailModalType('housingPlacements')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-4 border border-teal-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <p className="text-sm text-gray-600 font-medium">Housing Placements</p>
                     <p className="text-3xl font-bold text-teal-600 mt-1">{generatedReport.metrics.housingPlacements}</p>
-                    <p className="text-xs text-gray-500 mt-1">Permanent housing</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
+                  </div>
+                )}
+                {generatedReport.metrics.programExits > 0 && (
+                  <div
+                    onClick={() => {
+                      setDetailModalType('programExits')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
+                    <p className="text-sm text-gray-600 font-medium">Program Exits</p>
+                    <p className="text-3xl font-bold text-orange-600 mt-1">{generatedReport.metrics.programExits}</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for breakdown</p>
                   </div>
                 )}
               </div>
@@ -1555,6 +1618,92 @@ export default function CustomReportBuilder({
 
           </div>
         </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && generatedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h4 className="text-xl font-bold text-gray-900">
+                {detailModalType === 'programExits' && 'Program Exits Breakdown'}
+                {detailModalType === 'housingPlacements' && 'Housing Placements Details'}
+              </h4>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6">
+              {detailModalType === 'programExits' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border-2 border-orange-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Program Exits</p>
+                    <p className="text-4xl font-bold text-orange-600 mt-1">{generatedReport.metrics.programExits}</p>
+                  </div>
+
+                  {Object.entries(generatedReport.breakdowns.exitsByCategory).map(([category, data]) => {
+                    const categoryColors: Record<string, { bg: string, text: string, border: string }> = {
+                      'Permanent Housing': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+                      'Temporary Housing': { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
+                      'Institutional Settings': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+                      'Homeless Situations': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+                      'Other': { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' },
+                    }
+                    const colors = categoryColors[category] || categoryColors['Other']
+
+                    return (
+                      <div key={category} className={`${colors.bg} border ${colors.border} rounded-lg p-4`}>
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className={`font-semibold ${colors.text} text-lg`}>{category}</h5>
+                          <span className={`${colors.text} font-bold text-2xl`}>{data.total}</span>
+                        </div>
+                        <div className="space-y-2 pl-4">
+                          {Object.entries(data.destinations).map(([destination, count]) => (
+                            <div key={destination} className="flex justify-between items-center">
+                              <span className="text-gray-700">{destination}</span>
+                              <span className="font-semibold text-gray-900 text-lg">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {detailModalType === 'housingPlacements' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-4 border-2 border-teal-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Housing Placements</p>
+                    <p className="text-4xl font-bold text-teal-600 mt-1">{generatedReport.metrics.housingPlacements}</p>
+                    <p className="text-xs text-gray-500 mt-2">Exits to permanent housing destinations</p>
+                  </div>
+
+                  {generatedReport.breakdowns.exitsByCategory['Permanent Housing'] && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-green-700 text-lg mb-3">Permanent Housing Destinations</h5>
+                      <div className="space-y-2 pl-4">
+                        {Object.entries(generatedReport.breakdowns.exitsByCategory['Permanent Housing'].destinations).map(([destination, count]) => (
+                          <div key={destination} className="flex justify-between items-center">
+                            <span className="text-gray-700">{destination}</span>
+                            <span className="font-semibold text-gray-900 text-lg">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
