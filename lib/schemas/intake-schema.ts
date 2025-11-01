@@ -2,14 +2,15 @@ import { z } from 'zod'
 
 export const intakeFormSchema = z.object({
   // Personal Information
+  photo_url: z.string().optional().nullable(),
   first_name: z.string().min(1, 'First name is required').max(100),
   last_name: z.string().min(1, 'Last name is required').max(100),
   nickname: z.string().max(100).optional().nullable(),
   phone_number: z.string().optional().nullable(),
-  date_of_birth: z.string().min(1, 'Date of birth is required').regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
+  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').or(z.literal('')).optional().nullable(),
   gender: z.string().min(1, 'Gender is required'),
   race: z.string().min(1, 'Race is required'),
-  ethnicity: z.string().min(1, 'Ethnicity is required'),
+  ethnicity: z.string().optional().nullable(),
   sexual_orientation: z.string().optional().nullable(),
   preferred_language: z.string().optional().nullable(),
   cultural_lived_experience: z.string().optional().nullable(),
@@ -66,6 +67,7 @@ export const RACE_OPTIONS = [
   'American Indian or Alaska Native',
   'Asian',
   'Black or African American',
+  'Hispanic or Latino',
   'Native Hawaiian or Other Pacific Islander',
   'White',
   'Multiple Races',

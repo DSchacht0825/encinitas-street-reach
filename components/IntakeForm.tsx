@@ -27,15 +27,22 @@ export default function IntakeForm() {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [similarPersons, setSimilarPersons] = useState<SimilarPerson[]>([])
   const [pendingFormData, setPendingFormData] = useState<IntakeFormData | null>(null)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
+  const [isCameraActive, setIsCameraActive] = useState(false)
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(intakeFormSchema),
     defaultValues: {
+      photo_url: null,
       veteran_status: false,
       disability_status: false,
       disability_types: [] as string[],
@@ -55,6 +62,101 @@ export default function IntakeForm() {
   const lastName = watch('last_name')
   const dateOfBirth = watch('date_of_birth')
   const disabilityStatus = watch('disability_status')
+
+  // Handle file upload
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && file.type.startsWith('image/')) {
+      setPhotoFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Start camera
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      if (videoElement) {
+        videoElement.srcObject = stream
+        videoElement.play()
+        setIsCameraActive(true)
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error)
+      alert('Unable to access camera. Please check permissions or use file upload.')
+    }
+  }
+
+  // Stop camera
+  const stopCamera = () => {
+    if (videoElement?.srcObject) {
+      const stream = videoElement.srcObject as MediaStream
+      stream.getTracks().forEach(track => track.stop())
+      videoElement.srcObject = null
+      setIsCameraActive(false)
+    }
+  }
+
+  // Capture photo from camera
+  const capturePhoto = () => {
+    if (videoElement) {
+      const canvas = document.createElement('canvas')
+      canvas.width = videoElement.videoWidth
+      canvas.height = videoElement.videoHeight
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(videoElement, 0, 0)
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'client-photo.jpg', { type: 'image/jpeg' })
+            setPhotoFile(file)
+            setPhotoPreview(canvas.toDataURL('image/jpeg'))
+            stopCamera()
+          }
+        }, 'image/jpeg', 0.8)
+      }
+    }
+  }
+
+  // Remove photo
+  const removePhoto = () => {
+    setPhotoFile(null)
+    setPhotoPreview(null)
+    setValue('photo_url', null)
+    stopCamera()
+  }
+
+  // Upload photo to Supabase storage
+  const uploadPhoto = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploadingPhoto(true)
+      const supabase = createClient()
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('client-photos')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('client-photos')
+        .getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      return null
+    } finally {
+      setIsUploadingPhoto(false)
+    }
+  }
 
   // Check for duplicates when name or DOB changes
   useEffect(() => {
@@ -91,10 +193,17 @@ export default function IntakeForm() {
     const supabase = createClient()
 
     try {
+      // Upload photo if exists
+      let photoUrl = data.photo_url
+      if (photoFile && !photoUrl) {
+        photoUrl = await uploadPhoto(photoFile)
+      }
+
       const { data: result, error } = await supabase
         .from('persons')
         .insert([
           {
+            photo_url: photoUrl || null,
             first_name: data.first_name,
             last_name: data.last_name,
             nickname: data.nickname || null,
@@ -164,6 +273,97 @@ export default function IntakeForm() {
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {/* Photo Section */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">Client Photo</h2>
+          <div className="space-y-4">
+            {!photoPreview && !isCameraActive && (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Take Photo
+                </button>
+                <label className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Upload Photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+
+            {isCameraActive && (
+              <div className="space-y-4">
+                <video
+                  ref={setVideoElement}
+                  className="w-full max-w-md mx-auto rounded-lg border-2 border-gray-300"
+                  autoPlay
+                  playsInline
+                />
+                <div className="flex gap-4 justify-center">
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Capture
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {photoPreview && (
+              <div className="space-y-4">
+                <div className="relative w-full max-w-md mx-auto">
+                  <img
+                    src={photoPreview}
+                    alt="Client photo preview"
+                    className="w-full rounded-lg border-2 border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 text-center">
+                  Photo ready to upload
+                </p>
+              </div>
+            )}
+
+            {isUploadingPhoto && (
+              <div className="text-center">
+                <p className="text-sm text-gray-600">Uploading photo...</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Personal Information Section */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
@@ -221,7 +421,7 @@ export default function IntakeForm() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date of Birth <span className="text-red-500">*</span>
+                Date of Birth
               </label>
               <input
                 {...register('date_of_birth')}
@@ -270,26 +470,6 @@ export default function IntakeForm() {
               </select>
               {errors.race && (
                 <p className="text-red-500 text-sm mt-1">{errors.race.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ethnicity <span className="text-red-500">*</span>
-              </label>
-              <select
-                {...register('ethnicity')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select ethnicity...</option>
-                {ETHNICITY_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              {errors.ethnicity && (
-                <p className="text-red-500 text-sm mt-1">{errors.ethnicity.message}</p>
               )}
             </div>
 
