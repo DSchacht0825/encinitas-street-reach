@@ -161,7 +161,7 @@ export default function IntakeForm() {
   useEffect(() => {
     const checkDuplicates = async () => {
       if (firstName && lastName && firstName.length > 2 && lastName.length > 2) {
-        const result = await checkForDuplicates(firstName, lastName, dateOfBirth)
+        const result = await checkForDuplicates(firstName, lastName, dateOfBirth || undefined)
         if (result.hasPotentialDuplicates) {
           // Store similar persons but don't show modal yet
           setSimilarPersons(result.similarPersons)
