@@ -189,14 +189,35 @@ export default function CustomReportBuilder({
       // Get unique person IDs from filtered encounters
       const personIdsWithEncounters = new Set(filteredEncounters.map(e => e.person_id))
 
+      // Get person IDs with exits in the date range
+      const personIdsWithExits = new Set(
+        persons
+          .filter(p => {
+            if (!p.exit_date) return false
+            const exitDateStr = p.exit_date.substring(0, 10)
+            if (startDate && endDate) {
+              return exitDateStr >= startDate && exitDateStr <= endDate
+            } else if (startDate) {
+              return exitDateStr >= startDate
+            } else if (endDate) {
+              return exitDateStr <= endDate
+            }
+            return true
+          })
+          .map(p => p.id)
+      )
+
       console.log('📊 FILTERING DEBUG:')
       console.log('  - Filtered encounters count:', filteredEncounters.length)
       console.log('  - Unique person IDs from encounters:', personIdsWithEncounters.size)
+      console.log('  - Unique person IDs from exits:', personIdsWithExits.size)
       console.log('  - Sample encounter person_ids (first 3):', filteredEncounters.slice(0, 3).map(e => e.person_id))
       console.log('  - Sample person ids from database (first 3):', persons.slice(0, 3).map(p => p.id))
 
-      // Filter persons by demographics AND by whether they have encounters in the date range
-      let filteredPersons = persons.filter(p => personIdsWithEncounters.has(p.id))
+      // Filter persons by demographics AND by whether they have encounters OR exits in the date range
+      let filteredPersons = persons.filter(p =>
+        personIdsWithEncounters.has(p.id) || personIdsWithExits.has(p.id)
+      )
 
       console.log('  - Persons after encounter filter:', filteredPersons.length)
 
