@@ -32,6 +32,15 @@ export default function IntakeForm() {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
   const [isCameraActive, setIsCameraActive] = useState(false)
 
+  // Get current date in local timezone (not UTC)
+  const getLocalDateString = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const {
     register,
     handleSubmit,
@@ -53,7 +62,7 @@ export default function IntakeForm() {
       release_of_information: false,
       evictions: 0,
       income_amount: undefined,
-      enrollment_date: new Date().toISOString().split('T')[0],
+      enrollment_date: getLocalDateString(),
     },
   })
 

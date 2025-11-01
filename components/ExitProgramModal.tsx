@@ -23,6 +23,15 @@ export default function ExitProgramModal({
 }: ExitProgramModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Get current date in local timezone (not UTC)
+  const getLocalDateString = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const {
     register,
     handleSubmit,
@@ -31,7 +40,7 @@ export default function ExitProgramModal({
   } = useForm<ExitFormData>({
     resolver: zodResolver(exitFormSchema),
     defaultValues: {
-      exit_date: new Date().toISOString().split('T')[0],
+      exit_date: getLocalDateString(),
       exit_destination: '',
       exit_notes: '',
     },
