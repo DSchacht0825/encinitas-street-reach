@@ -84,6 +84,15 @@ interface GeneratedReport {
   }
   filteredPersons: Person[]
   filteredEncounters: Encounter[]
+  housingDebugInfo?: Array<{
+    name: string
+    exit_date: string | null
+    exit_destination: string | null
+    exitDateStr: string
+    inDateRange: boolean
+    isPermanentHousing: boolean
+    included: boolean
+  }>
 }
 
 export default function CustomReportBuilder({
@@ -316,6 +325,31 @@ export default function CustomReportBuilder({
       }).length
 
       console.log('  - Final housing placements count:', housingPlacements)
+
+      // Create debug info for housing placements (visible in UI)
+      const housingDebugInfo = filteredPersons
+        .filter(p => p.exit_date)
+        .map(p => {
+          const exitDateStr = p.exit_date!.substring(0, 10)
+          const inDateRange = startDate && endDate
+            ? (exitDateStr >= startDate && exitDateStr <= endDate)
+            : startDate
+              ? exitDateStr >= startDate
+              : endDate
+                ? exitDateStr <= endDate
+                : true
+          const isPermanentHousing = permanentHousingDestinations.includes(p.exit_destination || '')
+
+          return {
+            name: `${p.first_name} ${p.last_name}`,
+            exit_date: p.exit_date,
+            exit_destination: p.exit_destination,
+            exitDateStr,
+            inDateRange,
+            isPermanentHousing,
+            included: inDateRange && isPermanentHousing
+          }
+        })
 
       // Build referral breakdown
       const matByProvider = filteredEncounters
@@ -788,6 +822,7 @@ export default function CustomReportBuilder({
         },
         filteredPersons,
         filteredEncounters,
+        housingDebugInfo,
       })
 
       console.log('✅ Report generated successfully - NO EXPORT CALLED')
@@ -1249,6 +1284,25 @@ export default function CustomReportBuilder({
                   </div>
                 )}
               </div>
+
+              {/* Housing Placements Debug Info */}
+              {includeHousingPlacements && generatedReport.housingDebugInfo && generatedReport.housingDebugInfo.length > 0 && (
+                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h6 className="text-sm font-semibold text-yellow-900 mb-3">🔍 Housing Placements Debug Info</h6>
+                  <div className="space-y-2 text-xs">
+                    {generatedReport.housingDebugInfo.map((debug, idx) => (
+                      <div key={idx} className={`p-2 rounded ${debug.included ? 'bg-green-100 border border-green-300' : 'bg-red-100 border border-red-300'}`}>
+                        <p className="font-semibold">{debug.name}</p>
+                        <p>Exit Date: {debug.exit_date} (parsed as: {debug.exitDateStr})</p>
+                        <p>Exit Destination: {debug.exit_destination}</p>
+                        <p>In Date Range ({generatedReport.metadata.startDate} to {generatedReport.metadata.endDate}): {debug.inDateRange ? '✓ YES' : '✗ NO'}</p>
+                        <p>Is Permanent Housing: {debug.isPermanentHousing ? '✓ YES' : '✗ NO'}</p>
+                        <p className="font-semibold mt-1">Counted: {debug.included ? '✓ YES' : '✗ NO'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
