@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
         hostname: 'www.sdrescue.org',
         pathname: '/wp-content/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'gruajicebvttlsjhfhda.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
 };
