@@ -199,6 +199,21 @@ export default function CustomReportBuilder({
       const personIdsWithEncounters = new Set(filteredEncounters.map(e => e.person_id))
 
       // Get person IDs with exits in the date range
+      console.log('🔍 EXIT FIELD CHECK:')
+      console.log('  - Total persons:', persons.length)
+      console.log('  - Sample person fields (first person):', persons[0] ? Object.keys(persons[0]) : 'No persons')
+      console.log('  - Persons with exit_date field:', persons.filter(p => 'exit_date' in p).length)
+      console.log('  - Persons with non-null exit_date:', persons.filter(p => p.exit_date).length)
+      persons.forEach((p, idx) => {
+        if (p.exit_date) {
+          console.log(`  - Person ${idx} (${p.first_name} ${p.last_name}):`, {
+            exit_date: p.exit_date,
+            exit_destination: p.exit_destination,
+            has_field: 'exit_date' in p
+          })
+        }
+      })
+
       const personIdsWithExits = new Set(
         persons
           .filter(p => {
