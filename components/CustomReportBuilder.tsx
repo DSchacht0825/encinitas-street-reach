@@ -253,7 +253,7 @@ export default function CustomReportBuilder({
       const totalReferrals = matReferrals + detoxReferrals
 
       // Calculate housing placements from program exits to permanent housing
-      const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing']
+      const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing'] as readonly string[]
       const housingPlacements = filteredPersons.filter(p => {
         if (!p.exit_date || !p.exit_destination) return false
 
