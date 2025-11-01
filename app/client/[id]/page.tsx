@@ -37,6 +37,7 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
     first_name: string
     last_name: string
     nickname?: string | null
+    photo_url?: string | null
     date_of_birth: string
     gender: string
     race: string
@@ -118,38 +119,52 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header with back link */}
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <Link
-              href="/"
-              className="text-blue-700 hover:text-blue-800 font-medium mb-4 inline-flex items-center"
-            >
-              <svg
-                className="w-5 h-5 mr-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        <div className="mb-8 flex justify-between items-start">
+          <div className="flex items-start gap-6">
+            {person.photo_url && (
+              <div className="flex-shrink-0">
+                <Image
+                  src={person.photo_url}
+                  alt={`${person.first_name} ${person.last_name}`}
+                  width={120}
+                  height={120}
+                  className="rounded-lg border-2 border-gray-300 object-cover"
+                  style={{ width: '120px', height: '120px' }}
                 />
-              </svg>
-              Back to Client List
-            </Link>
-            <h2 className="text-3xl font-bold text-gray-900 mt-4">
-              {person.first_name} {person.last_name}
-              {person.nickname && (
-                <span className="text-xl text-gray-600 ml-2">
-                  (aka {person.nickname})
-                </span>
-              )}
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Client ID: {person.client_id}
-            </p>
+              </div>
+            )}
+            <div>
+              <Link
+                href="/"
+                className="text-blue-700 hover:text-blue-800 font-medium mb-4 inline-flex items-center"
+              >
+                <svg
+                  className="w-5 h-5 mr-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
+                </svg>
+                Back to Client List
+              </Link>
+              <h2 className="text-3xl font-bold text-gray-900 mt-4">
+                {person.first_name} {person.last_name}
+                {person.nickname && (
+                  <span className="text-xl text-gray-600 ml-2">
+                    (aka {person.nickname})
+                  </span>
+                )}
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Client ID: {person.client_id}
+              </p>
+            </div>
           </div>
           <div className="flex gap-3">
             {!person.exit_date && (
