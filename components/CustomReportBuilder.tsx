@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { exportToCSV } from '@/lib/utils/export-csv'
+import { EXIT_DESTINATIONS } from '@/lib/schemas/exit-schema'
 
 interface Person {
   id: string  // UUID from database
@@ -23,6 +24,9 @@ interface Person {
   referral_source?: string | null
   disability_status?: boolean
   disability_type?: string | null
+  exit_date?: string | null
+  exit_destination?: string | null
+  exit_notes?: string | null
 }
 
 interface Encounter {
@@ -247,7 +251,27 @@ export default function CustomReportBuilder({
       const matReferrals = filteredEncounters.filter(e => e.mat_referral).length
       const detoxReferrals = filteredEncounters.filter(e => e.detox_referral).length
       const totalReferrals = matReferrals + detoxReferrals
-      const housingPlacements = 0 // Placeholder
+
+      // Calculate housing placements from program exits to permanent housing
+      const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing']
+      const housingPlacements = filteredPersons.filter(p => {
+        if (!p.exit_date || !p.exit_destination) return false
+
+        // Check if exit is within date range
+        const exitDateStr = p.exit_date.substring(0, 10)
+        const inDateRange = startDate && endDate
+          ? (exitDateStr >= startDate && exitDateStr <= endDate)
+          : startDate
+            ? exitDateStr >= startDate
+            : endDate
+              ? exitDateStr <= endDate
+              : true
+
+        // Check if destination is permanent housing
+        const isPermanentHousing = permanentHousingDestinations.includes(p.exit_destination as any)
+
+        return inDateRange && isPermanentHousing
+      }).length
 
       // Build referral breakdown
       const matByProvider = filteredEncounters
