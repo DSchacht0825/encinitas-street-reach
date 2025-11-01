@@ -9,6 +9,7 @@ import ExportButton from '@/components/ExportButton'
 import CustomReportBuilder from '@/components/CustomReportBuilder'
 import DuplicateManager from '@/components/DuplicateManager'
 import LogoutButton from '@/components/LogoutButton'
+import ProgramExitsSection from '@/components/ProgramExitsSection'
 
 export default async function DashboardPage({
   searchParams,
@@ -98,6 +99,9 @@ export default async function DashboardPage({
     referral_source?: string | null
     income?: string | null
     income_amount?: number | null
+    exit_date?: string | null
+    exit_destination?: string | null
+    exit_notes?: string | null
   }
 
   const allEncounters = (encounters || []) as EncounterData[]
@@ -160,10 +164,6 @@ export default async function DashboardPage({
       acc[p.race] = (acc[p.race] || 0) + 1
       return acc
     }, {} as Record<string, number>),
-    byEthnicity: allPersons.reduce((acc, p) => {
-      acc[p.ethnicity] = (acc[p.ethnicity] || 0) + 1
-      return acc
-    }, {} as Record<string, number>),
     veterans: allPersons.filter((p) => p.veteran_status).length,
     chronicallyHomeless: allPersons.filter((p) => p.chronic_homeless).length,
     withPhoneNumber: allPersons.filter((p) => p.phone_number).length,
@@ -173,6 +173,18 @@ export default async function DashboardPage({
           allPersons.filter((p) => p.income_amount && p.income_amount > 0).length)
       : 0,
     totalIncome: allPersons.reduce((sum, p) => sum + (p.income_amount || 0), 0),
+  }
+
+  // Program exits breakdown
+  const exitedPersons = allPersons.filter((p) => p.exit_date)
+  const exitMetrics = {
+    totalExits: exitedPersons.length,
+    byDestination: exitedPersons.reduce((acc, p) => {
+      if (p.exit_destination) {
+        acc[p.exit_destination] = (acc[p.exit_destination] || 0) + 1
+      }
+      return acc
+    }, {} as Record<string, number>),
   }
 
   // Service interaction types
@@ -383,6 +395,12 @@ export default async function DashboardPage({
             </div>
 
             <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-gray-600 font-medium">Program Exits</p>
+              <p className="text-3xl font-bold text-teal-600 mt-1">{exitMetrics.totalExits}</p>
+              <p className="text-xs text-gray-500 mt-1">Clients exited from program</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-sm text-gray-600 font-medium">Naloxone Distributed</p>
               <p className="text-3xl font-bold text-red-600 mt-1">{metrics.naloxoneDistributed}</p>
               <p className="text-xs text-gray-500 mt-1">Kits given out</p>
@@ -398,12 +416,6 @@ export default async function DashboardPage({
               <p className="text-sm text-gray-600 font-medium">Total Referrals</p>
               <p className="text-3xl font-bold text-purple-600 mt-1">{metrics.matDetoxReferrals}</p>
               <p className="text-xs text-gray-500 mt-1">MAT & Detox combined</p>
-            </div>
-
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-sm text-gray-600 font-medium">Housing Placements</p>
-              <p className="text-3xl font-bold text-teal-600 mt-1">{metrics.permanentHousingPlacements}</p>
-              <p className="text-xs text-gray-500 mt-1">Permanent housing</p>
             </div>
           </div>
         </div>
@@ -680,7 +692,7 @@ export default async function DashboardPage({
         </div>
 
         {/* Demographics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4">Gender Distribution</h3>
             <dl className="space-y-2">
@@ -694,7 +706,7 @@ export default async function DashboardPage({
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Race Distribution</h3>
+            <h3 className="text-lg font-semibold mb-4">Race/Ethnicity Distribution</h3>
             <dl className="space-y-2">
               {Object.entries(demographics.byRace).map(([race, count]) => (
                 <div key={race} className="flex justify-between">
@@ -719,6 +731,12 @@ export default async function DashboardPage({
             </dl>
           </div>
         </div>
+
+        {/* Program Exits Section */}
+        <ProgramExitsSection
+          totalExits={exitMetrics.totalExits}
+          exitsByDestination={exitMetrics.byDestination}
+        />
 
         {/* Contact & Economic Data */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
