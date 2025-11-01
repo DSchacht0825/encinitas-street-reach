@@ -275,6 +275,18 @@ export default function CustomReportBuilder({
 
       // Calculate housing placements from program exits to permanent housing
       const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing'] as readonly string[]
+
+      console.log('🏠 HOUSING PLACEMENTS DEBUG:')
+      console.log('  - Permanent housing destinations:', permanentHousingDestinations)
+      console.log('  - Filtered persons count:', filteredPersons.length)
+      console.log('  - Persons with exit_date:', filteredPersons.filter(p => p.exit_date).length)
+      console.log('  - All exits in filtered persons:', filteredPersons.filter(p => p.exit_date).map(p => ({
+        name: `${p.first_name} ${p.last_name}`,
+        exit_date: p.exit_date,
+        exit_destination: p.exit_destination,
+        exit_date_str: p.exit_date?.substring(0, 10)
+      })))
+
       const housingPlacements = filteredPersons.filter(p => {
         if (!p.exit_date || !p.exit_destination) return false
 
@@ -291,8 +303,19 @@ export default function CustomReportBuilder({
         // Check if destination is permanent housing
         const isPermanentHousing = permanentHousingDestinations.includes(p.exit_destination)
 
+        console.log(`  - Checking ${p.first_name} ${p.last_name}:`, {
+          exitDateStr,
+          startDate,
+          endDate,
+          inDateRange,
+          exit_destination: p.exit_destination,
+          isPermanentHousing
+        })
+
         return inDateRange && isPermanentHousing
       }).length
+
+      console.log('  - Final housing placements count:', housingPlacements)
 
       // Build referral breakdown
       const matByProvider = filteredEncounters
