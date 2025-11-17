@@ -36,6 +36,7 @@ export const encounterFormSchema = z.object({
   other_services: z.string().optional().nullable(),
 
   // Case Management
+  high_utilizer_contact: z.boolean(),
   case_management_notes: z.string().optional().nullable(),
 })
 

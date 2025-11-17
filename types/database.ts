@@ -109,6 +109,7 @@ export interface Database {
           transportation_provided: boolean
           shower_trailer: boolean
           other_services: string | null
+          high_utilizer_contact: boolean
           case_management_notes: string | null
           created_at: string
           updated_at: string
@@ -138,6 +139,7 @@ export interface Database {
           transportation_provided: boolean
           shower_trailer: boolean
           other_services?: string | null
+          high_utilizer_contact?: boolean
           case_management_notes?: string | null
           created_at?: string
           updated_at?: string
@@ -167,6 +169,7 @@ export interface Database {
           transportation_provided?: boolean
           shower_trailer?: boolean
           other_services?: string | null
+          high_utilizer_contact?: boolean
           case_management_notes?: string | null
           created_at?: string
           updated_at?: string

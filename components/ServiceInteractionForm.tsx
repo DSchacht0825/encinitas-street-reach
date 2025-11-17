@@ -47,6 +47,7 @@ export default function ServiceInteractionForm({
       harm_reduction_education: false,
       transportation_provided: false,
       shower_trailer: false,
+      high_utilizer_contact: false,
     },
   })
 
@@ -112,6 +113,7 @@ export default function ServiceInteractionForm({
           transportation_provided: data.transportation_provided,
           shower_trailer: data.shower_trailer,
           other_services: data.other_services || null,
+          high_utilizer_contact: data.high_utilizer_contact,
           case_management_notes: data.case_management_notes || null,
         } as never,
       ])
@@ -543,6 +545,23 @@ export default function ServiceInteractionForm({
       {/* Case Management Notes */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Case Management Notes</h2>
+
+        <div className="mb-4">
+          <label className="flex items-center space-x-2 cursor-pointer bg-yellow-50 hover:bg-yellow-100 border-2 border-yellow-300 rounded-lg px-4 py-3 transition-colors">
+            <input
+              {...register('high_utilizer_contact')}
+              type="checkbox"
+              className="h-5 w-5 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+            />
+            <span className="text-sm font-semibold text-yellow-900">
+              ⚠️ High Utilizer Contact
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 mt-1 ml-1">
+            Check if this client is a frequent service user
+          </p>
+        </div>
+
         <textarea
           {...register('case_management_notes')}
           rows={6}
