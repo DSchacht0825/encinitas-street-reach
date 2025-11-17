@@ -24,6 +24,7 @@ export interface Database {
           disability_status: boolean
           disability_type: string | null
           chronic_homeless: boolean
+          high_utilizer: boolean
           living_situation: string
           length_of_time_homeless: string | null
           enrollment_date: string
@@ -48,6 +49,7 @@ export interface Database {
           disability_status: boolean
           disability_type?: string | null
           chronic_homeless: boolean
+          high_utilizer?: boolean
           living_situation: string
           length_of_time_homeless?: string | null
           enrollment_date: string
@@ -72,6 +74,7 @@ export interface Database {
           disability_status?: boolean
           disability_type?: string | null
           chronic_homeless?: boolean
+          high_utilizer?: boolean
           living_situation?: string
           length_of_time_homeless?: string | null
           enrollment_date?: string
