@@ -78,6 +78,7 @@ interface GeneratedReport {
     matReferrals: number
     detoxReferrals: number
     housingPlacements: number
+    highUtilizerContacts: number
     programExits: number
   }
   breakdowns: {
@@ -768,6 +769,7 @@ export default function CustomReportBuilder({
           matReferrals,
           detoxReferrals,
           housingPlacements,
+          highUtilizerContacts,
           programExits,
         },
         breakdowns: {
@@ -1195,7 +1197,7 @@ export default function CustomReportBuilder({
           <div className="p-6">
             {/* Key Metrics Grid */}
           {(includeClientsServed || includeServiceInteractions || includeNaloxone ||
-            includeFentanylStrips || includeTotalReferrals || includeHousingPlacements) && (
+            includeFentanylStrips || includeTotalReferrals || includeHousingPlacements || includeHighUtilizerCount) && (
             <div className="mb-8">
               <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1250,6 +1252,13 @@ export default function CustomReportBuilder({
                     <p className="text-sm text-gray-600 font-medium">Housing Placements</p>
                     <p className="text-3xl font-bold text-teal-600 mt-1">{generatedReport.metrics.housingPlacements}</p>
                     <p className="text-xs text-gray-500 mt-1">Click for details</p>
+                  </div>
+                )}
+                {includeHighUtilizerCount && (
+                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border-2 border-yellow-300">
+                    <p className="text-sm text-gray-600 font-medium">⚠️ High Utilizer Contacts</p>
+                    <p className="text-3xl font-bold text-yellow-600 mt-1">{generatedReport.metrics.highUtilizerContacts}</p>
+                    <p className="text-xs text-gray-500 mt-1">Interactions with high utilizers</p>
                   </div>
                 )}
                 {generatedReport.metrics.programExits > 0 && (
