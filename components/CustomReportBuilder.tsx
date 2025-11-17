@@ -19,6 +19,7 @@ interface Person {
   length_of_time_homeless?: string | null
   veteran_status: boolean
   chronic_homeless: boolean
+  high_utilizer?: boolean
   enrollment_date: string
   case_manager?: string | null
   referral_source?: string | null
@@ -125,6 +126,7 @@ export default function CustomReportBuilder({
   const [filterVeteransOnly, setFilterVeteransOnly] = useState(false)
   const [filterDisabledOnly, setFilterDisabledOnly] = useState(false)
   const [filterChronicHomeless, setFilterChronicHomeless] = useState(false)
+  const [filterHighUtilizers, setFilterHighUtilizers] = useState(false)
   const [filterAgeRange, setFilterAgeRange] = useState('')
 
   const handleGenerate = () => {
@@ -205,6 +207,10 @@ export default function CustomReportBuilder({
 
       if (filterChronicHomeless) {
         filteredPersons = filteredPersons.filter(p => p.chronic_homeless)
+      }
+
+      if (filterHighUtilizers) {
+        filteredPersons = filteredPersons.filter(p => p.high_utilizer)
       }
 
       if (filterAgeRange) {
@@ -985,6 +991,16 @@ export default function CustomReportBuilder({
               className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700">Chronic Homeless Only</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-50 p-2 rounded border border-yellow-200">
+            <input
+              type="checkbox"
+              checked={filterHighUtilizers}
+              onChange={(e) => setFilterHighUtilizers(e.target.checked)}
+              className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700 font-semibold">⚠️ High Utilizers Only</span>
           </label>
 
           <div className="flex items-center space-x-2">

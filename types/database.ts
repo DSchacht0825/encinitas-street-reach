@@ -172,11 +172,11 @@ export interface Database {
           updated_at?: string
         }
       }
-      users: {
+      user_profiles: {
         Row: {
           id: string
           email: string
-          full_name: string
+          full_name: string | null
           role: 'admin' | 'field_worker'
           created_at: string
           updated_at: string
@@ -184,7 +184,7 @@ export interface Database {
         Insert: {
           id: string
           email: string
-          full_name: string
+          full_name?: string | null
           role: 'admin' | 'field_worker'
           created_at?: string
           updated_at?: string
@@ -192,7 +192,7 @@ export interface Database {
         Update: {
           id?: string
           email?: string
-          full_name?: string
+          full_name?: string | null
           role?: 'admin' | 'field_worker'
           created_at?: string
           updated_at?: string
