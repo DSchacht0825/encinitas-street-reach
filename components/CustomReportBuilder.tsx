@@ -52,6 +52,7 @@ interface Encounter {
   transportation_provided: boolean
   shower_trailer: boolean
   other_services?: string | null
+  high_utilizer_contact?: boolean
   case_management_notes?: string | null
 }
 
@@ -108,6 +109,7 @@ export default function CustomReportBuilder({
   const [includeTotalReferrals, setIncludeTotalReferrals] = useState(true)
   const [includeReferralBreakdown, setIncludeReferralBreakdown] = useState(true)
   const [includeHousingPlacements, setIncludeHousingPlacements] = useState(true)
+  const [includeHighUtilizerCount, setIncludeHighUtilizerCount] = useState(true)
   const [includeByNameList, setIncludeByNameList] = useState(false)
   const [includeInteractionsDetail, setIncludeInteractionsDetail] = useState(false)
 
@@ -238,6 +240,7 @@ export default function CustomReportBuilder({
       const matReferrals = filteredEncounters.filter(e => e.mat_referral).length
       const detoxReferrals = filteredEncounters.filter(e => e.detox_referral).length
       const totalReferrals = matReferrals + detoxReferrals
+      const highUtilizerContacts = filteredEncounters.filter(e => e.high_utilizer_contact).length
 
       // Calculate housing placements from program exits to permanent housing
       const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing'] as readonly string[]
@@ -398,6 +401,14 @@ export default function CustomReportBuilder({
           'Metric': 'Total Referrals',
           'Value': totalReferrals,
           'Description': `MAT: ${matReferrals}, Detox: ${detoxReferrals}`,
+        })
+      }
+
+      if (includeHighUtilizerCount) {
+        reportData.push({
+          'Metric': 'High Utilizer Contacts',
+          'Value': highUtilizerContacts,
+          'Description': 'Interactions with high utilizers',
         })
       }
 
@@ -926,6 +937,16 @@ export default function CustomReportBuilder({
               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700">Housing Placements</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-50 p-2 rounded border border-yellow-200">
+            <input
+              type="checkbox"
+              checked={includeHighUtilizerCount}
+              onChange={(e) => setIncludeHighUtilizerCount(e.target.checked)}
+              className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700 font-medium">⚠️ High Utilizer Contacts</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
