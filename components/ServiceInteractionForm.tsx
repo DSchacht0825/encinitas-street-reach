@@ -14,6 +14,7 @@ import { useGeolocation } from '@/lib/hooks/useGeolocation'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import MapPicker from './MapPicker'
+import type { Database } from '@/types/database'
 
 interface ServiceInteractionFormProps {
   personId: string
@@ -103,10 +104,13 @@ export default function ServiceInteractionForm({
     const supabase = createClient()
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updateData: Database['public']['Tables']['persons']['Update'] = {
+        high_utilizer: checked
+      }
+
       const { error } = await supabase
         .from('persons')
-        .update({ high_utilizer: checked } as any)
+        .update(updateData)
         .eq('id', personId)
 
       if (error) throw error
