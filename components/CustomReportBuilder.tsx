@@ -241,7 +241,14 @@ export default function CustomReportBuilder({
       const matReferrals = filteredEncounters.filter(e => e.mat_referral).length
       const detoxReferrals = filteredEncounters.filter(e => e.detox_referral).length
       const totalReferrals = matReferrals + detoxReferrals
-      const highUtilizerContacts = filteredEncounters.filter(e => e.high_utilizer_contact).length
+
+      // Count unique persons who have at least one high utilizer encounter
+      const highUtilizerPersonIds = new Set(
+        filteredEncounters
+          .filter(e => e.high_utilizer_contact)
+          .map(e => e.person_id)
+      )
+      const highUtilizerContacts = highUtilizerPersonIds.size
 
       // Calculate housing placements from program exits to permanent housing
       const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing'] as readonly string[]
@@ -407,9 +414,9 @@ export default function CustomReportBuilder({
 
       if (includeHighUtilizerCount) {
         reportData.push({
-          'Metric': 'High Utilizer Contacts',
+          'Metric': 'High Utilizers',
           'Value': highUtilizerContacts,
-          'Description': 'Interactions with high utilizers',
+          'Description': 'Unique individuals marked as high utilizers',
         })
       }
 
@@ -948,7 +955,7 @@ export default function CustomReportBuilder({
               onChange={(e) => setIncludeHighUtilizerCount(e.target.checked)}
               className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
             />
-            <span className="text-sm text-gray-700 font-medium">⚠️ High Utilizer Contacts</span>
+            <span className="text-sm text-gray-700 font-medium">⚠️ High Utilizers (Unique Count)</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
@@ -1256,9 +1263,9 @@ export default function CustomReportBuilder({
                 )}
                 {includeHighUtilizerCount && (
                   <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border-2 border-yellow-300">
-                    <p className="text-sm text-gray-600 font-medium">⚠️ High Utilizer Contacts</p>
+                    <p className="text-sm text-gray-600 font-medium">⚠️ High Utilizers</p>
                     <p className="text-3xl font-bold text-yellow-600 mt-1">{generatedReport.metrics.highUtilizerContacts}</p>
-                    <p className="text-xs text-gray-500 mt-1">Interactions with high utilizers</p>
+                    <p className="text-xs text-gray-500 mt-1">Unique individuals</p>
                   </div>
                 )}
                 {generatedReport.metrics.programExits > 0 && (
