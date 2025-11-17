@@ -103,6 +103,7 @@ export default function ServiceInteractionForm({
     const supabase = createClient()
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase
         .from('persons')
         .update({ high_utilizer: checked } as any)
