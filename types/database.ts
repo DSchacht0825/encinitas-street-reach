@@ -24,7 +24,6 @@ export interface Database {
           disability_status: boolean
           disability_type: string | null
           chronic_homeless: boolean
-          high_utilizer: boolean
           living_situation: string
           length_of_time_homeless: string | null
           enrollment_date: string
@@ -49,7 +48,6 @@ export interface Database {
           disability_status: boolean
           disability_type?: string | null
           chronic_homeless: boolean
-          high_utilizer?: boolean
           living_situation: string
           length_of_time_homeless?: string | null
           enrollment_date: string
@@ -74,7 +72,6 @@ export interface Database {
           disability_status?: boolean
           disability_type?: string | null
           chronic_homeless?: boolean
-          high_utilizer?: boolean
           living_situation?: string
           length_of_time_homeless?: string | null
           enrollment_date?: string
@@ -175,11 +172,11 @@ export interface Database {
           updated_at?: string
         }
       }
-      user_profiles: {
+      users: {
         Row: {
           id: string
           email: string
-          full_name: string | null
+          full_name: string
           role: 'admin' | 'field_worker'
           created_at: string
           updated_at: string
@@ -187,7 +184,7 @@ export interface Database {
         Insert: {
           id: string
           email: string
-          full_name?: string | null
+          full_name: string
           role: 'admin' | 'field_worker'
           created_at?: string
           updated_at?: string
@@ -195,7 +192,7 @@ export interface Database {
         Update: {
           id?: string
           email?: string
-          full_name?: string | null
+          full_name?: string
           role?: 'admin' | 'field_worker'
           created_at?: string
           updated_at?: string

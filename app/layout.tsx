@@ -16,18 +16,17 @@ export const metadata: Metadata = {
   title: "Encinitas Street Reach",
   description: "By-name list and service tracking for San Diego Rescue Mission street outreach",
   manifest: "/manifest.json",
+  themeColor: "#1e40af",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Street Reach",
   },
-};
-
-export const viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: "#1e40af",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 export default function RootLayout({

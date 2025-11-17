@@ -14,7 +14,6 @@ import { useGeolocation } from '@/lib/hooks/useGeolocation'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import MapPicker from './MapPicker'
-import type { Database } from '@/types/database'
 
 interface ServiceInteractionFormProps {
   personId: string
@@ -29,8 +28,6 @@ export default function ServiceInteractionForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [isHighUtilizer, setIsHighUtilizer] = useState(false)
-  const [isUpdatingHighUtilizer, setIsUpdatingHighUtilizer] = useState(false)
   const { latitude, longitude, accuracy, error: gpsError, loading: gpsLoading, refreshLocation } = useGeolocation()
 
   const {
@@ -68,24 +65,6 @@ export default function ServiceInteractionForm({
     }
   }, [latitude, longitude, setValue])
 
-  // Fetch person's high utilizer status on component mount
-  useEffect(() => {
-    const fetchHighUtilizerStatus = async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('persons')
-        .select('high_utilizer')
-        .eq('id', personId)
-        .single<{ high_utilizer: boolean }>()
-
-      if (!error && data) {
-        setIsHighUtilizer(data.high_utilizer || false)
-      }
-    }
-
-    fetchHighUtilizerStatus()
-  }, [personId])
-
   // Handle manual location selection from map
   const handleManualLocationSelect = (lat: number, lng: number) => {
     setManualLocation({ lat, lng })
@@ -97,32 +76,6 @@ export default function ServiceInteractionForm({
   const currentLatitude = manualLocation?.lat ?? latitude
   const currentLongitude = manualLocation?.lng ?? longitude
   const isManuallySet = manualLocation !== null
-
-  // Handle high utilizer toggle
-  const handleHighUtilizerToggle = async (checked: boolean) => {
-    setIsUpdatingHighUtilizer(true)
-    const supabase = createClient()
-
-    try {
-      const updateData: Database['public']['Tables']['persons']['Update'] = {
-        high_utilizer: checked
-      }
-
-      const { error } = await supabase
-        .from('persons')
-        .update(updateData)
-        .eq('id', personId)
-
-      if (error) throw error
-
-      setIsHighUtilizer(checked)
-    } catch (error) {
-      console.error('Error updating high utilizer status:', error)
-      alert('Error updating high utilizer status. Please try again.')
-    } finally {
-      setIsUpdatingHighUtilizer(false)
-    }
-  }
 
   const onSubmit = async (data: EncounterFormData) => {
     if (currentLatitude === null || currentLongitude === null) {
@@ -312,28 +265,9 @@ export default function ServiceInteractionForm({
         <h2 className="text-xl font-semibold mb-4">Service Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <p className="text-lg font-medium text-gray-900 mb-2">
+            <p className="text-lg font-medium text-gray-900 mb-4">
               Client: {personName}
             </p>
-            <div className="flex items-center space-x-3 mb-4">
-              <label className="flex items-center space-x-2 cursor-pointer bg-yellow-50 hover:bg-yellow-100 border-2 border-yellow-300 rounded-lg px-4 py-2 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={isHighUtilizer}
-                  onChange={(e) => handleHighUtilizerToggle(e.target.checked)}
-                  disabled={isUpdatingHighUtilizer}
-                  className="h-5 w-5 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-                />
-                <span className="text-sm font-semibold text-yellow-900">
-                  {isUpdatingHighUtilizer ? 'Updating...' : 'Mark as High Utilizer'}
-                </span>
-              </label>
-              {isHighUtilizer && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-300">
-                  ⚠️ High Utilizer
-                </span>
-              )}
-            </div>
           </div>
 
           <div>
