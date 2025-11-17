@@ -75,7 +75,7 @@ export default function ServiceInteractionForm({
         .from('persons')
         .select('high_utilizer')
         .eq('id', personId)
-        .single()
+        .single<{ high_utilizer: boolean }>()
 
       if (!error && data) {
         setIsHighUtilizer(data.high_utilizer || false)
