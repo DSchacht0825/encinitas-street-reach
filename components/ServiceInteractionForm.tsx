@@ -105,7 +105,7 @@ export default function ServiceInteractionForm({
     try {
       const { error } = await supabase
         .from('persons')
-        .update({ high_utilizer: checked } as { high_utilizer: boolean })
+        .update({ high_utilizer: checked } as any)
         .eq('id', personId)
 
       if (error) throw error
