@@ -68,7 +68,7 @@ export default function ReturnToActiveModal({
           change_date: data.return_date,
           notes: data.notes || null,
           created_by: user?.email || 'Unknown',
-        })
+        } as never)
 
       if (statusError) throw statusError
 
