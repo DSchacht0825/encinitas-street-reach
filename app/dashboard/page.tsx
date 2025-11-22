@@ -49,8 +49,13 @@ export default async function DashboardPage({
     .from('persons')
     .select('*')
 
-  if (encountersError || personsError || allEncountersError) {
-    console.error('Dashboard data fetch error:', encountersError || personsError || allEncountersError)
+  // Fetch all status changes for reporting
+  const { data: statusChanges, error: statusChangesError } = await supabase
+    .from('status_changes')
+    .select('*')
+
+  if (encountersError || personsError || allEncountersError || statusChangesError) {
+    console.error('Dashboard data fetch error:', encountersError || personsError || allEncountersError || statusChangesError)
   }
 
   // Type assertions for Supabase data (all fields from database)
@@ -104,9 +109,21 @@ export default async function DashboardPage({
     exit_notes?: string | null
   }
 
+  type StatusChangeData = {
+    id: string
+    person_id: string
+    change_type: 'exit' | 'return_to_active'
+    change_date: string
+    exit_destination?: string | null
+    notes?: string | null
+    created_by?: string | null
+    created_at: string
+  }
+
   const allEncounters = (encounters || []) as EncounterData[]
   const allEncountersUnfiltered = (allEncountersData || []) as EncounterData[]
   const allPersons = (persons || []) as PersonData[]
+  const allStatusChanges = (statusChanges || []) as StatusChangeData[]
 
   // Calculate clients served in date range (unique person_ids from filtered encounters)
   const clientsServedInRange = startDate && endDate
@@ -464,7 +481,7 @@ export default async function DashboardPage({
 
         {/* Custom Report Builder */}
         <div className="mb-6">
-          <CustomReportBuilder persons={allPersons} encounters={allEncountersUnfiltered} />
+          <CustomReportBuilder persons={allPersons} encounters={allEncountersUnfiltered} statusChanges={allStatusChanges} />
         </div>
 
         {/* Duplicate Manager */}

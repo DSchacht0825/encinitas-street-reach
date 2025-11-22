@@ -201,6 +201,41 @@ export interface Database {
           updated_at?: string
         }
       }
+      status_changes: {
+        Row: {
+          id: string
+          person_id: string
+          change_type: 'exit' | 'return_to_active'
+          change_date: string
+          exit_destination: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          person_id: string
+          change_type: 'exit' | 'return_to_active'
+          change_date?: string
+          exit_destination?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          person_id?: string
+          change_type?: 'exit' | 'return_to_active'
+          change_date?: string
+          exit_destination?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

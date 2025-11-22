@@ -13,6 +13,8 @@ interface Person {
   last_name: string
   nickname: string | null
   date_of_birth: string
+  exit_date?: string | null
+  exit_destination?: string | null
   last_encounter?: {
     service_date: string
     outreach_location: string
@@ -37,24 +39,30 @@ export default function ClientSearch() {
   const [filteredPersons, setFilteredPersons] = useState<Person[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
+  const [showExitedOnly, setShowExitedOnly] = useState(false)
 
   // Load all persons on component mount
   useEffect(() => {
     loadPersons()
   }, [])
 
-  // Filter persons when search term changes
+  // Filter persons when search term or exit filter changes
   useEffect(() => {
+    // First apply exit filter
+    let baseList = showExitedOnly
+      ? allPersons.filter(p => p.exit_date !== null && p.exit_date !== undefined)
+      : allPersons
+
     if (!searchTerm || searchTerm.trim() === '') {
-      setFilteredPersons(allPersons.slice(0, 20)) // Show first 20 by default
+      setFilteredPersons(baseList.slice(0, 20)) // Show first 20 by default
       setIsSearching(false)
     } else {
       setIsSearching(true)
-      const results = fuzzySearchPersons(searchTerm, allPersons)
+      const results = fuzzySearchPersons(searchTerm, baseList)
       setFilteredPersons(results.slice(0, 20))
       setIsSearching(false)
     }
-  }, [searchTerm, allPersons])
+  }, [searchTerm, allPersons, showExitedOnly])
 
   const loadPersons = async () => {
     setIsLoading(true)
@@ -71,6 +79,8 @@ export default function ClientSearch() {
           last_name,
           nickname,
           date_of_birth,
+          exit_date,
+          exit_destination,
           encounters (
             service_date,
             outreach_location
@@ -88,6 +98,8 @@ export default function ClientSearch() {
         last_name: string
         nickname: string | null
         date_of_birth: string
+        exit_date?: string | null
+        exit_destination?: string | null
         encounters?: Array<{ service_date: string; outreach_location: string }>
       }) => ({
         ...person,
@@ -158,6 +170,31 @@ export default function ClientSearch() {
         )}
       </div>
 
+      {/* Filter Toggle */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setShowExitedOnly(!showExitedOnly)}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            showExitedOnly
+              ? 'bg-amber-100 text-amber-800 border-2 border-amber-300'
+              : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
+          }`}
+        >
+          <span className="inline-flex items-center">
+            {showExitedOnly ? (
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            )}
+            {showExitedOnly ? 'Showing Exited Only' : 'Show Exited Clients'}
+          </span>
+        </button>
+      </div>
+
       {/* Results Count */}
       <div className="flex justify-between items-center text-sm text-gray-600">
         <span>
@@ -165,6 +202,8 @@ export default function ClientSearch() {
             ? 'Loading...'
             : isSearching
             ? 'Searching...'
+            : showExitedOnly
+            ? `Showing ${filteredPersons.length} exited clients`
             : `Showing ${filteredPersons.length} of ${allPersons.length} clients`}
         </span>
         <Link
@@ -215,18 +254,29 @@ export default function ClientSearch() {
             <Link
               key={person.id}
               href={`/client/${person.id}`}
-              className="block bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all"
+              className={`block border rounded-lg p-4 hover:shadow-md transition-all ${
+                person.exit_date
+                  ? 'bg-amber-50 border-amber-200 hover:border-amber-400'
+                  : 'bg-white border-gray-200 hover:border-blue-500'
+              }`}
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {person.first_name} {person.last_name}
-                    {person.nickname && (
-                      <span className="text-sm text-gray-600 ml-2 font-normal">
-                        (aka {person.nickname})
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {person.first_name} {person.last_name}
+                      {person.nickname && (
+                        <span className="text-sm text-gray-600 ml-2 font-normal">
+                          (aka {person.nickname})
+                        </span>
+                      )}
+                    </h3>
+                    {person.exit_date && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-200 text-amber-800">
+                        Exited
                       </span>
                     )}
-                  </h3>
+                  </div>
                   <div className="mt-1 space-y-1 text-sm text-gray-600">
                     <p>
                       <span className="font-medium">ID:</span> {person.client_id} |{' '}
@@ -234,7 +284,15 @@ export default function ClientSearch() {
                       <span className="font-medium">DOB:</span>{' '}
                       {format(new Date(person.date_of_birth), 'MM/dd/yyyy')}
                     </p>
-                    {person.last_encounter && (
+                    {person.exit_date ? (
+                      <p className="text-amber-700">
+                        <span className="font-medium">Exited:</span>{' '}
+                        {format(new Date(person.exit_date), 'MM/dd/yyyy')}
+                        {person.exit_destination && (
+                          <span> - {person.exit_destination}</span>
+                        )}
+                      </p>
+                    ) : person.last_encounter ? (
                       <p className="text-gray-500">
                         <span className="font-medium">Last seen:</span>{' '}
                         {format(
@@ -243,10 +301,15 @@ export default function ClientSearch() {
                         )}{' '}
                         at {person.last_encounter.outreach_location}
                       </p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
+                  {person.exit_date && (
+                    <span className="text-xs text-amber-600 font-medium">
+                      Click to reactivate
+                    </span>
+                  )}
                   <svg
                     className="h-5 w-5 text-gray-400"
                     fill="none"

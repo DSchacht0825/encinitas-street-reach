@@ -51,9 +51,27 @@ export default function ExitProgramModal({
     const supabase = createClient()
 
     try {
+      // Get current user for tracking who made the change
+      const { data: { user } } = await supabase.auth.getUser()
+
       // Ensure date is in YYYY-MM-DD format without timezone conversion
       const exitDate = data.exit_date // Already in YYYY-MM-DD from date input
 
+      // First, log the exit to status_changes
+      const { error: statusError } = await supabase
+        .from('status_changes')
+        .insert({
+          person_id: personId,
+          change_type: 'exit',
+          change_date: exitDate,
+          exit_destination: data.exit_destination,
+          notes: data.exit_notes || null,
+          created_by: user?.email || 'Unknown',
+        })
+
+      if (statusError) throw statusError
+
+      // Then update the person record
       const { error } = await supabase
         .from('persons')
         .update({

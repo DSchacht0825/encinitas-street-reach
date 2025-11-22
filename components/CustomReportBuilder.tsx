@@ -56,9 +56,21 @@ interface Encounter {
   case_management_notes?: string | null
 }
 
+interface StatusChange {
+  id: string
+  person_id: string
+  change_type: 'exit' | 'return_to_active'
+  change_date: string
+  exit_destination?: string | null
+  notes?: string | null
+  created_by?: string | null
+  created_at: string
+}
+
 interface CustomReportBuilderProps {
   persons: Person[]
   encounters: Encounter[]
+  statusChanges?: StatusChange[]
 }
 
 interface GeneratedReport {
@@ -80,11 +92,25 @@ interface GeneratedReport {
     housingPlacements: number
     highUtilizerContacts: number
     programExits: number
+    returnedToActive: number
   }
   breakdowns: {
     matByProvider: Record<string, number>
     detoxByProvider: Record<string, number>
     exitsByCategory: Record<string, { total: number, destinations: Record<string, number> }>
+    returnedToActiveDetails: Array<{
+      person_id: string
+      person_name: string
+      client_id: string
+      return_date: string
+      notes: string | null
+    }>
+    highUtilizerDetails: Array<{
+      person_id: string
+      person_name: string
+      client_id: string
+      encounter_count: number
+    }>
   }
   filteredPersons: Person[]
   filteredEncounters: Encounter[]
@@ -93,6 +119,7 @@ interface GeneratedReport {
 export default function CustomReportBuilder({
   persons,
   encounters,
+  statusChanges = [],
 }: CustomReportBuilderProps) {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -111,6 +138,7 @@ export default function CustomReportBuilder({
   const [includeReferralBreakdown, setIncludeReferralBreakdown] = useState(true)
   const [includeHousingPlacements, setIncludeHousingPlacements] = useState(true)
   const [includeHighUtilizerCount, setIncludeHighUtilizerCount] = useState(true)
+  const [includeReturnedToActive, setIncludeReturnedToActive] = useState(true)
   const [includeByNameList, setIncludeByNameList] = useState(false)
   const [includeInteractionsDetail, setIncludeInteractionsDetail] = useState(false)
 
@@ -250,6 +278,18 @@ export default function CustomReportBuilder({
       )
       const highUtilizerContacts = highUtilizerPersonIds.size
 
+      // Build details for high utilizers with person info and encounter count
+      const highUtilizerDetails = Array.from(highUtilizerPersonIds).map(personId => {
+        const person = persons.find(p => p.id === personId)
+        const encounterCount = filteredEncounters.filter(e => e.person_id === personId && e.high_utilizer_contact).length
+        return {
+          person_id: personId,
+          person_name: person ? `${person.first_name} ${person.last_name}` : 'Unknown',
+          client_id: person?.client_id || 'Unknown',
+          encounter_count: encounterCount,
+        }
+      }).sort((a, b) => b.encounter_count - a.encounter_count)
+
       // Calculate housing placements from program exits to permanent housing
       const permanentHousingDestinations = EXIT_DESTINATIONS['Permanent Housing'] as readonly string[]
       const housingPlacements = filteredPersons.filter(p => {
@@ -286,6 +326,33 @@ export default function CustomReportBuilder({
       })
 
       const programExits = personsWithExits.length
+
+      // Calculate returned to active from status_changes
+      const returnedToActiveRecords = statusChanges.filter(sc => {
+        if (sc.change_type !== 'return_to_active') return false
+        const changeDateStr = sc.change_date.substring(0, 10)
+        if (startDate && endDate) {
+          return changeDateStr >= startDate && changeDateStr <= endDate
+        } else if (startDate) {
+          return changeDateStr >= startDate
+        } else if (endDate) {
+          return changeDateStr <= endDate
+        }
+        return true
+      })
+      const returnedToActive = returnedToActiveRecords.length
+
+      // Build details for returned to active with person info
+      const returnedToActiveDetails = returnedToActiveRecords.map(sc => {
+        const person = persons.find(p => p.id === sc.person_id)
+        return {
+          person_id: sc.person_id,
+          person_name: person ? `${person.first_name} ${person.last_name}` : 'Unknown',
+          client_id: person?.client_id || 'Unknown',
+          return_date: sc.change_date,
+          notes: sc.notes || null,
+        }
+      }).sort((a, b) => new Date(b.return_date).getTime() - new Date(a.return_date).getTime())
 
       const exitsByCategory = Object.entries(EXIT_DESTINATIONS).reduce((acc, [category, destinations]) => {
         const categoryDestinations: Record<string, number> = {}
@@ -463,6 +530,14 @@ export default function CustomReportBuilder({
           'Metric': 'Housing Placements',
           'Value': housingPlacements,
           'Description': 'Permanent housing',
+        })
+      }
+
+      if (includeReturnedToActive) {
+        reportData.push({
+          'Metric': 'Returned to Active',
+          'Value': returnedToActive,
+          'Description': 'Previously exited clients who returned',
         })
       }
 
@@ -778,11 +853,14 @@ export default function CustomReportBuilder({
           housingPlacements,
           highUtilizerContacts,
           programExits,
+          returnedToActive,
         },
         breakdowns: {
           matByProvider,
           detoxByProvider,
           exitsByCategory,
+          returnedToActiveDetails,
+          highUtilizerDetails,
         },
         filteredPersons,
         filteredEncounters,
@@ -817,8 +895,8 @@ export default function CustomReportBuilder({
   const allUnchecked = !includeClientsServed && !includeServiceInteractions &&
                        !includeNaloxone && !includeFentanylStrips &&
                        !includeTotalReferrals && !includeReferralBreakdown &&
-                       !includeHousingPlacements && !includeByNameList &&
-                       !includeInteractionsDetail
+                       !includeHousingPlacements && !includeReturnedToActive &&
+                       !includeByNameList && !includeInteractionsDetail
 
   return (
     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-lg p-6 border-2 border-green-200">
@@ -956,6 +1034,16 @@ export default function CustomReportBuilder({
               className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700 font-medium">⚠️ High Utilizers (Unique Count)</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded border border-green-200">
+            <input
+              type="checkbox"
+              checked={includeReturnedToActive}
+              onChange={(e) => setIncludeReturnedToActive(e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700 font-medium">↩️ Returned to Active</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
@@ -1204,7 +1292,7 @@ export default function CustomReportBuilder({
           <div className="p-6">
             {/* Key Metrics Grid */}
           {(includeClientsServed || includeServiceInteractions || includeNaloxone ||
-            includeFentanylStrips || includeTotalReferrals || includeHousingPlacements || includeHighUtilizerCount) && (
+            includeFentanylStrips || includeTotalReferrals || includeHousingPlacements || includeHighUtilizerCount || includeReturnedToActive) && (
             <div className="mb-8">
               <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1262,10 +1350,16 @@ export default function CustomReportBuilder({
                   </div>
                 )}
                 {includeHighUtilizerCount && (
-                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border-2 border-yellow-300">
+                  <div
+                    onClick={() => {
+                      setDetailModalType('highUtilizers')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border-2 border-yellow-300 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <p className="text-sm text-gray-600 font-medium">⚠️ High Utilizers</p>
                     <p className="text-3xl font-bold text-yellow-600 mt-1">{generatedReport.metrics.highUtilizerContacts}</p>
-                    <p className="text-xs text-gray-500 mt-1">Unique individuals</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
                   </div>
                 )}
                 {generatedReport.metrics.programExits > 0 && (
@@ -1279,6 +1373,19 @@ export default function CustomReportBuilder({
                     <p className="text-sm text-gray-600 font-medium">Program Exits</p>
                     <p className="text-3xl font-bold text-orange-600 mt-1">{generatedReport.metrics.programExits}</p>
                     <p className="text-xs text-gray-500 mt-1">Click for breakdown</p>
+                  </div>
+                )}
+                {includeReturnedToActive && (
+                  <div
+                    onClick={() => {
+                      setDetailModalType('returnedToActive')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-4 border-2 border-emerald-300 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
+                    <p className="text-sm text-gray-600 font-medium">↩️ Returned to Active</p>
+                    <p className="text-3xl font-bold text-emerald-600 mt-1">{generatedReport.metrics.returnedToActive}</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
                   </div>
                 )}
               </div>
@@ -1666,6 +1773,8 @@ export default function CustomReportBuilder({
               <h4 className="text-xl font-bold text-gray-900">
                 {detailModalType === 'programExits' && 'Program Exits Breakdown'}
                 {detailModalType === 'housingPlacements' && 'Housing Placements Details'}
+                {detailModalType === 'returnedToActive' && 'Returned to Active Details'}
+                {detailModalType === 'highUtilizers' && 'High Utilizers Details'}
               </h4>
               <button
                 onClick={() => setShowDetailModal(false)}
@@ -1735,6 +1844,82 @@ export default function CustomReportBuilder({
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {detailModalType === 'returnedToActive' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-4 border-2 border-emerald-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Returned to Active</p>
+                    <p className="text-4xl font-bold text-emerald-600 mt-1">{generatedReport.metrics.returnedToActive}</p>
+                    <p className="text-xs text-gray-500 mt-2">Previously exited clients who returned to active status</p>
+                  </div>
+
+                  {generatedReport.breakdowns.returnedToActiveDetails.length > 0 ? (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-emerald-700 text-lg mb-3">Clients Who Returned</h5>
+                      <div className="space-y-3">
+                        {generatedReport.breakdowns.returnedToActiveDetails.map((detail, index) => (
+                          <div key={index} className="bg-white rounded-lg p-3 border border-emerald-100 shadow-sm">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-semibold text-gray-900">{detail.person_name}</p>
+                                <p className="text-sm text-gray-500">ID: {detail.client_id}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-emerald-600">
+                                  Returned: {new Date(detail.return_date).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            {detail.notes && (
+                              <p className="text-sm text-gray-600 mt-2 italic">&quot;{detail.notes}&quot;</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No clients returned to active in this date range.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {detailModalType === 'highUtilizers' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border-2 border-yellow-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total High Utilizers</p>
+                    <p className="text-4xl font-bold text-yellow-600 mt-1">{generatedReport.metrics.highUtilizerContacts}</p>
+                    <p className="text-xs text-gray-500 mt-2">Unique individuals flagged as high utilizers in this date range</p>
+                  </div>
+
+                  {generatedReport.breakdowns.highUtilizerDetails.length > 0 ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-yellow-700 text-lg mb-3">High Utilizer List</h5>
+                      <div className="space-y-3">
+                        {generatedReport.breakdowns.highUtilizerDetails.map((detail, index) => (
+                          <div key={index} className="bg-white rounded-lg p-3 border border-yellow-100 shadow-sm">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-semibold text-gray-900">{detail.person_name}</p>
+                                <p className="text-sm text-gray-500">ID: {detail.client_id}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-yellow-600">{detail.encounter_count}</p>
+                                <p className="text-xs text-gray-500">encounters</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No high utilizers in this date range.</p>
                     </div>
                   )}
                 </div>
