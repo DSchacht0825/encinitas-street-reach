@@ -49,7 +49,7 @@ export default function ClientSearch() {
   // Filter persons when search term or exit filter changes
   useEffect(() => {
     // First apply exit filter
-    let baseList = showExitedOnly
+    const baseList = showExitedOnly
       ? allPersons.filter(p => p.exit_date !== null && p.exit_date !== undefined)
       : allPersons
 
