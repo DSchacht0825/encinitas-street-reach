@@ -48,6 +48,9 @@ export const EXIT_DESTINATIONS = {
     'Data not collected',
     'No exit interview completed',
   ],
+  'System': [
+    'Auto-inactivated - No contact for 90 days',
+  ],
 } as const
 
 // Flattened list of all destinations for validation
