@@ -113,6 +113,7 @@ interface GeneratedReport {
     }>
   }
   filteredPersons: Person[]
+  activePersons: Person[]
   filteredEncounters: Encounter[]
 }
 
@@ -256,6 +257,9 @@ export default function CustomReportBuilder({
       // Filter encounters to only include those for the filtered persons
       const filteredPersonIds = new Set(filteredPersons.map(p => p.id))
       filteredEncounters = filteredEncounters.filter(e => filteredPersonIds.has(e.person_id))
+
+      // Active persons = those without an exit_date (for By-Name List)
+      const activePersons = filteredPersons.filter(p => !p.exit_date)
 
       // Calculate metrics from filtered data
       const clientsServed = filteredPersons.length
@@ -563,7 +567,7 @@ export default function CustomReportBuilder({
           'Chronic Homeless': 'Chronic Homeless',
           'Enrollment Date': 'Enrollment Date',
         })
-        persons.forEach(p => {
+        activePersons.forEach(p => {
           reportData.push({
             'Metric': p.client_id,
             'Value': p.first_name,
@@ -863,6 +867,7 @@ export default function CustomReportBuilder({
           highUtilizerDetails,
         },
         filteredPersons,
+        activePersons,
         filteredEncounters,
       })
 
@@ -1437,13 +1442,13 @@ export default function CustomReportBuilder({
           )}
 
           {/* By-Name List */}
-          {includeByNameList && generatedReport.filteredPersons.length > 0 && (
+          {includeByNameList && generatedReport.activePersons.length > 0 && (
             <div className="mb-8">
               <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                Active By-Name List ({generatedReport.filteredPersons.length} clients)
+                Active By-Name List ({generatedReport.activePersons.length} clients)
               </h5>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -1459,7 +1464,7 @@ export default function CustomReportBuilder({
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {generatedReport.filteredPersons.map((person: Person, idx: number) => {
+                    {generatedReport.activePersons.map((person: Person, idx: number) => {
                       const calculateAge = (dob: string): number => {
                         const birthDate = new Date(dob)
                         const today = new Date()
