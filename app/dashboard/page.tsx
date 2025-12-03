@@ -125,15 +125,19 @@ export default async function DashboardPage({
   const allPersons = (persons || []) as PersonData[]
   const allStatusChanges = (statusChanges || []) as StatusChangeData[]
 
+  // Get persons who had encounters in the date range (for filtered demographics)
+  const personIdsInRange = new Set(allEncounters.map(e => e.person_id))
+  const personsInRange = startDate && endDate
+    ? allPersons.filter(p => personIdsInRange.has(p.id))
+    : allPersons
+
   // Calculate clients served in date range (unique person_ids from filtered encounters)
-  const clientsServedInRange = startDate && endDate
-    ? new Set(allEncounters.map(e => e.person_id)).size
-    : allPersons.length
+  const clientsServedInRange = personsInRange.length
 
   // Calculate metrics
   const metrics = {
-    // 1. Number of unduplicated individuals served
-    unduplicatedIndividuals: allPersons.length,
+    // 1. Number of unduplicated individuals served (filtered by date range)
+    unduplicatedIndividuals: personsInRange.length,
 
     // 2. Exits from unsheltered homelessness (detox, shelter, treatment referrals)
     exitsFromHomelessness: allEncounters.filter(
@@ -171,29 +175,36 @@ export default async function DashboardPage({
       .length,
   }
 
-  // Demographics breakdown
+  // Demographics breakdown - use personsInRange for date-filtered stats
   const demographics = {
-    byGender: allPersons.reduce((acc, p) => {
+    byGender: personsInRange.reduce((acc, p) => {
       acc[p.gender] = (acc[p.gender] || 0) + 1
       return acc
     }, {} as Record<string, number>),
-    byRace: allPersons.reduce((acc, p) => {
+    byRace: personsInRange.reduce((acc, p) => {
       acc[p.race] = (acc[p.race] || 0) + 1
       return acc
     }, {} as Record<string, number>),
-    veterans: allPersons.filter((p) => p.veteran_status).length,
-    chronicallyHomeless: allPersons.filter((p) => p.chronic_homeless).length,
-    withPhoneNumber: allPersons.filter((p) => p.phone_number).length,
-    withIncome: allPersons.filter((p) => p.income_amount && p.income_amount > 0).length,
-    averageIncome: allPersons.filter((p) => p.income_amount && p.income_amount > 0).length > 0
-      ? Math.round(allPersons.reduce((sum, p) => sum + (p.income_amount || 0), 0) /
-          allPersons.filter((p) => p.income_amount && p.income_amount > 0).length)
+    veterans: personsInRange.filter((p) => p.veteran_status).length,
+    chronicallyHomeless: personsInRange.filter((p) => p.chronic_homeless).length,
+    withPhoneNumber: personsInRange.filter((p) => p.phone_number).length,
+    withIncome: personsInRange.filter((p) => p.income_amount && p.income_amount > 0).length,
+    averageIncome: personsInRange.filter((p) => p.income_amount && p.income_amount > 0).length > 0
+      ? Math.round(personsInRange.reduce((sum, p) => sum + (p.income_amount || 0), 0) /
+          personsInRange.filter((p) => p.income_amount && p.income_amount > 0).length)
       : 0,
-    totalIncome: allPersons.reduce((sum, p) => sum + (p.income_amount || 0), 0),
+    totalIncome: personsInRange.reduce((sum, p) => sum + (p.income_amount || 0), 0),
   }
 
-  // Program exits breakdown
-  const exitedPersons = allPersons.filter((p) => p.exit_date)
+  // Program exits breakdown - filter by date range if specified
+  const exitedPersons = allPersons.filter((p) => {
+    if (!p.exit_date) return false
+    if (startDate && endDate) {
+      const exitDateStr = p.exit_date.substring(0, 10)
+      return exitDateStr >= startDate && exitDateStr <= endDate
+    }
+    return true // No date filter, show all exits
+  })
   const exitMetrics = {
     totalExits: exitedPersons.length,
     byDestination: exitedPersons.reduce((acc, p) => {
