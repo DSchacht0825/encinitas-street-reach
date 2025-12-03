@@ -8,6 +8,7 @@ import {
   type EncounterFormData,
   MAT_TYPES,
   CO_OCCURRING_TYPES,
+  PLACEMENT_LOCATIONS,
 } from '@/lib/schemas/encounter-schema'
 import { REFERRAL_SOURCES } from '@/lib/schemas/intake-schema'
 import { useGeolocation } from '@/lib/hooks/useGeolocation'
@@ -47,6 +48,7 @@ export default function ServiceInteractionForm({
       harm_reduction_education: false,
       transportation_provided: false,
       shower_trailer: false,
+      placement_made: false,
       high_utilizer_contact: false,
     },
   })
@@ -56,6 +58,8 @@ export default function ServiceInteractionForm({
   const matReferral = watch('mat_referral')
   const detoxReferral = watch('detox_referral')
   const naloxoneDistributed = watch('naloxone_distributed')
+  const placementMade = watch('placement_made')
+  const placementLocation = watch('placement_location')
 
   // Set GPS coordinates when available (auto GPS takes priority)
   useEffect(() => {
@@ -113,6 +117,9 @@ export default function ServiceInteractionForm({
           transportation_provided: data.transportation_provided,
           shower_trailer: data.shower_trailer,
           other_services: data.other_services || null,
+          placement_made: data.placement_made,
+          placement_location: data.placement_location || null,
+          placement_location_other: data.placement_location_other || null,
           high_utilizer_contact: data.high_utilizer_contact,
           case_management_notes: data.case_management_notes || null,
         } as never,
@@ -539,6 +546,63 @@ export default function ServiceInteractionForm({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Placement Section */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <svg className="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Placement
+        </h2>
+        <div className="space-y-4">
+          <div className="flex items-center">
+            <input
+              {...register('placement_made')}
+              type="checkbox"
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label className="ml-2 block text-sm text-gray-700 font-medium">
+              Placement Made
+            </label>
+          </div>
+
+          {placementMade && (
+            <div className="ml-6 space-y-4 border-l-2 border-green-200 pl-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Placement Location
+                </label>
+                <select
+                  {...register('placement_location')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select location...</option>
+                  {PLACEMENT_LOCATIONS.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {placementLocation === 'Other' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Other Placement Location
+                  </label>
+                  <input
+                    {...register('placement_location_other')}
+                    type="text"
+                    placeholder="Specify placement location..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

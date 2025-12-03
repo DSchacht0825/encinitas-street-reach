@@ -82,6 +82,9 @@ export default async function DashboardPage({
     transportation_provided: boolean
     shower_trailer: boolean
     other_services?: string | null
+    placement_made?: boolean
+    placement_location?: string | null
+    placement_location_other?: string | null
     case_management_notes?: string | null
   }
 
@@ -145,8 +148,8 @@ export default async function DashboardPage({
       (e) => e.detox_referral || e.mat_referral
     ).length,
 
-    // 3. Permanent housing placements (need to track this separately - placeholder)
-    permanentHousingPlacements: 0, // TODO: Add housing_placement field to encounters
+    // 3. Placements made
+    placementsMade: allEncounters.filter((e) => e.placement_made).length,
 
     // 4. Total Naloxone kits distributed
     naloxoneDistributed: allEncounters.filter((e) => e.naloxone_distributed).length,
@@ -244,6 +247,17 @@ export default async function DashboardPage({
         return acc
       }, {} as Record<string, number>),
   }
+
+  // Placement breakdown by location
+  const placementBreakdown = allEncounters
+    .filter(e => e.placement_made)
+    .reduce((acc, e) => {
+      const location = e.placement_location === 'Other'
+        ? (e.placement_location_other || 'Other')
+        : (e.placement_location || 'Unknown')
+      acc[location] = (acc[location] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
 
   // GPS coordinates for heat map
   const encounterLocations = allEncounters
@@ -489,6 +503,34 @@ export default async function DashboardPage({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Placement Breakdown Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <svg className="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Placements by Location
+          </h3>
+          <div className="mb-4">
+            <p className="text-3xl font-bold text-green-600">{metrics.placementsMade}</p>
+            <p className="text-sm text-gray-500">Total placements in this period</p>
+          </div>
+          {Object.keys(placementBreakdown).length > 0 ? (
+            <dl className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Object.entries(placementBreakdown)
+                .sort(([, a], [, b]) => b - a)
+                .map(([location, count]) => (
+                  <div key={location} className="flex justify-between items-center bg-green-50 px-4 py-3 rounded-lg">
+                    <dt className="text-gray-700 font-medium">{location}</dt>
+                    <dd className="font-bold text-green-600 text-lg">{count}</dd>
+                  </div>
+                ))}
+            </dl>
+          ) : (
+            <p className="text-gray-500 text-sm italic">No placements recorded in this period</p>
+          )}
         </div>
 
         {/* Custom Report Builder */}

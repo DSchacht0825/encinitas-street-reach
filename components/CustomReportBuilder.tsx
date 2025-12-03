@@ -52,6 +52,9 @@ interface Encounter {
   transportation_provided: boolean
   shower_trailer: boolean
   other_services?: string | null
+  placement_made?: boolean
+  placement_location?: string | null
+  placement_location_other?: string | null
   high_utilizer_contact?: boolean
   case_management_notes?: string | null
 }
@@ -90,6 +93,7 @@ interface GeneratedReport {
     matReferrals: number
     detoxReferrals: number
     housingPlacements: number
+    placementsMade: number
     highUtilizerContacts: number
     programExits: number
     returnedToActive: number
@@ -97,6 +101,7 @@ interface GeneratedReport {
   breakdowns: {
     matByProvider: Record<string, number>
     detoxByProvider: Record<string, number>
+    placementsByLocation: Record<string, number>
     exitsByCategory: Record<string, { total: number, destinations: Record<string, number> }>
     returnedToActiveDetails: Array<{
       person_id: string
@@ -138,6 +143,7 @@ export default function CustomReportBuilder({
   const [includeTotalReferrals, setIncludeTotalReferrals] = useState(true)
   const [includeReferralBreakdown, setIncludeReferralBreakdown] = useState(true)
   const [includeHousingPlacements, setIncludeHousingPlacements] = useState(true)
+  const [includePlacements, setIncludePlacements] = useState(true)
   const [includeHighUtilizerCount, setIncludeHighUtilizerCount] = useState(true)
   const [includeReturnedToActive, setIncludeReturnedToActive] = useState(true)
   const [includeByNameList, setIncludeByNameList] = useState(false)
@@ -397,6 +403,20 @@ export default function CustomReportBuilder({
           return acc
         }, {} as Record<string, number>)
 
+      // Calculate placements
+      const placementsMade = filteredEncounters.filter(e => e.placement_made).length
+
+      // Placement breakdown by location
+      const placementsByLocation = filteredEncounters
+        .filter(e => e.placement_made)
+        .reduce((acc, e) => {
+          const location = e.placement_location === 'Other'
+            ? (e.placement_location_other || 'Other')
+            : (e.placement_location || 'Unknown')
+          acc[location] = (acc[location] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
       // Build custom report data
       const reportData: Record<string, unknown>[] = []
 
@@ -535,6 +555,36 @@ export default function CustomReportBuilder({
           'Value': housingPlacements,
           'Description': 'Permanent housing',
         })
+      }
+
+      if (includePlacements) {
+        reportData.push({
+          'Metric': 'Placements Made',
+          'Value': placementsMade,
+          'Description': 'Total placements to programs/shelters',
+        })
+
+        if (Object.keys(placementsByLocation).length > 0) {
+          reportData.push({
+            'Metric': '',
+            'Value': '',
+            'Description': '',
+          })
+          reportData.push({
+            'Metric': 'Placements by Location',
+            'Value': '',
+            'Description': '',
+          })
+          Object.entries(placementsByLocation)
+            .sort(([, a], [, b]) => b - a)
+            .forEach(([location, count]) => {
+              reportData.push({
+                'Metric': `  ${location}`,
+                'Value': count,
+                'Description': '',
+              })
+            })
+        }
       }
 
       if (includeReturnedToActive) {
@@ -880,6 +930,7 @@ export default function CustomReportBuilder({
           matReferrals,
           detoxReferrals,
           housingPlacements,
+          placementsMade,
           highUtilizerContacts,
           programExits,
           returnedToActive,
@@ -887,6 +938,7 @@ export default function CustomReportBuilder({
         breakdowns: {
           matByProvider,
           detoxByProvider,
+          placementsByLocation,
           exitsByCategory,
           returnedToActiveDetails,
           highUtilizerDetails,
@@ -1053,7 +1105,17 @@ export default function CustomReportBuilder({
               onChange={(e) => setIncludeHousingPlacements(e.target.checked)}
               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
-            <span className="text-sm text-gray-700">Housing Placements</span>
+            <span className="text-sm text-gray-700">Housing Placements (Exits)</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded border border-green-200">
+            <input
+              type="checkbox"
+              checked={includePlacements}
+              onChange={(e) => setIncludePlacements(e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700 font-medium">🏠 Placements (BCNC, La Posada, etc.)</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-50 p-2 rounded border border-yellow-200">
@@ -1377,6 +1439,19 @@ export default function CustomReportBuilder({
                     <p className="text-sm text-gray-600 font-medium">Housing Placements</p>
                     <p className="text-3xl font-bold text-teal-600 mt-1">{generatedReport.metrics.housingPlacements}</p>
                     <p className="text-xs text-gray-500 mt-1">Click for details</p>
+                  </div>
+                )}
+                {includePlacements && (
+                  <div
+                    onClick={() => {
+                      setDetailModalType('placements')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-300 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
+                    <p className="text-sm text-gray-600 font-medium">🏠 Placements</p>
+                    <p className="text-3xl font-bold text-green-600 mt-1">{generatedReport.metrics.placementsMade}</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for breakdown</p>
                   </div>
                 )}
                 {includeHighUtilizerCount && (
@@ -1824,6 +1899,7 @@ export default function CustomReportBuilder({
               <h4 className="text-xl font-bold text-gray-900">
                 {detailModalType === 'programExits' && 'Program Exits Breakdown'}
                 {detailModalType === 'housingPlacements' && 'Housing Placements Details'}
+                {detailModalType === 'placements' && 'Placements Breakdown'}
                 {detailModalType === 'returnedToActive' && 'Returned to Active Details'}
                 {detailModalType === 'highUtilizers' && 'High Utilizers Details'}
               </h4>
@@ -1935,6 +2011,36 @@ export default function CustomReportBuilder({
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       <p>No clients returned to active in this date range.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {detailModalType === 'placements' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Placements</p>
+                    <p className="text-4xl font-bold text-green-600 mt-1">{generatedReport.metrics.placementsMade}</p>
+                    <p className="text-xs text-gray-500 mt-2">Placements made to programs/shelters in this date range</p>
+                  </div>
+
+                  {Object.keys(generatedReport.breakdowns.placementsByLocation).length > 0 ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-green-700 text-lg mb-3">Placements by Location</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {Object.entries(generatedReport.breakdowns.placementsByLocation)
+                          .sort(([, a], [, b]) => b - a)
+                          .map(([location, count]) => (
+                            <div key={location} className="flex justify-between items-center bg-white px-4 py-3 rounded-lg border border-green-100 shadow-sm">
+                              <span className="text-gray-700 font-medium">{location}</span>
+                              <span className="font-bold text-green-600 text-lg">{count}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No placements recorded in this date range.</p>
                     </div>
                   )}
                 </div>

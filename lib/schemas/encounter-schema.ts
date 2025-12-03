@@ -35,6 +35,11 @@ export const encounterFormSchema = z.object({
   shower_trailer: z.boolean(),
   other_services: z.string().optional().nullable(),
 
+  // Placement
+  placement_made: z.boolean(),
+  placement_location: z.string().optional().nullable(),
+  placement_location_other: z.string().optional().nullable(),
+
   // Case Management
   high_utilizer_contact: z.boolean(),
   case_management_notes: z.string().optional().nullable(),
@@ -58,5 +63,20 @@ export const CO_OCCURRING_TYPES = [
   'Substance Use + PTSD',
   'Substance Use + Schizophrenia',
   'Multiple Conditions',
+  'Other',
+] as const
+
+// Placement locations
+export const PLACEMENT_LOCATIONS = [
+  'BCNC',
+  'Detox',
+  'La Posada',
+  'Vista',
+  'Victory Outreach',
+  'Set Free Ministries',
+  'Teen Challenge',
+  'Restoration Ranch',
+  'Mission Academy',
+  'South County Lighthouse',
   'Other',
 ] as const
