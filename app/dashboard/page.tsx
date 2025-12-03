@@ -35,12 +35,17 @@ export default async function DashboardPage({
     .select('*')
 
   // Build filtered query for dashboard metrics
+  // Use timestamp range that covers the full day in local timezone
+  // Start date: beginning of day (00:00:00)
+  // End date: end of day (23:59:59)
   let dashboardEncountersQuery = supabase.from('encounters').select('*')
 
   if (startDate && endDate) {
+    const startTimestamp = `${startDate}T00:00:00`
+    const endTimestamp = `${endDate}T23:59:59`
     dashboardEncountersQuery = dashboardEncountersQuery
-      .gte('service_date', startDate)
-      .lte('service_date', endDate)
+      .gte('service_date', startTimestamp)
+      .lte('service_date', endTimestamp)
   }
 
   const { data: encounters, error: encountersError } = await dashboardEncountersQuery
@@ -129,6 +134,16 @@ export default async function DashboardPage({
   const allPersons = (persons || []) as PersonData[]
   const allStatusChanges = (statusChanges || []) as StatusChangeData[]
 
+  // Helper function to get local date string (YYYY-MM-DD) from timestamp
+  // This properly handles timezone offsets by parsing the date and extracting local date
+  const getLocalDateString = (dateStr: string): string => {
+    const date = new Date(dateStr)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   // Get persons who had encounters in the date range (for filtered demographics)
   const personIdsInRange = new Set(allEncounters.map(e => e.person_id))
   const personsInRange = startDate && endDate
@@ -204,7 +219,7 @@ export default async function DashboardPage({
   const exitedPersons = allPersons.filter((p) => {
     if (!p.exit_date) return false
     if (startDate && endDate) {
-      const exitDateStr = p.exit_date.substring(0, 10)
+      const exitDateStr = getLocalDateString(p.exit_date)
       return exitDateStr >= startDate && exitDateStr <= endDate
     }
     return true // No date filter, show all exits

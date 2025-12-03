@@ -134,6 +134,8 @@ export default function CustomReportBuilder({
   const [showReportModal, setShowReportModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [detailModalType, setDetailModalType] = useState<string>('')
+  const [selectedEncounter, setSelectedEncounter] = useState<Encounter | null>(null)
+  const [showEncounterModal, setShowEncounterModal] = useState(false)
 
   // Metric selections
   const [includeClientsServed, setIncludeClientsServed] = useState(true)
@@ -183,26 +185,38 @@ export default function CustomReportBuilder({
         return age
       }
 
+      // Helper function to get local date string (YYYY-MM-DD) from timestamp
+      // This properly handles timezone offsets by parsing the date and extracting local date
+      const getLocalDateString = (dateStr: string): string => {
+        const date = new Date(dateStr)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+
       // Filter encounters by date range FIRST
       let filteredEncounters = encounters
 
 
       if (startDate && endDate) {
         // Both dates provided: filter between range
-        // Extract YYYY-MM-DD from ISO timestamp for comparison
-        filteredEncounters = filteredEncounters.filter(
-          e => e.service_date.substring(0, 10) >= startDate && e.service_date.substring(0, 10) <= endDate
-        )
+        filteredEncounters = filteredEncounters.filter(e => {
+          const localDate = getLocalDateString(e.service_date)
+          return localDate >= startDate && localDate <= endDate
+        })
       } else if (startDate) {
         // Only start date: filter from start date onwards
-        filteredEncounters = filteredEncounters.filter(
-          e => e.service_date.substring(0, 10) >= startDate
-        )
+        filteredEncounters = filteredEncounters.filter(e => {
+          const localDate = getLocalDateString(e.service_date)
+          return localDate >= startDate
+        })
       } else if (endDate) {
         // Only end date: filter up to end date
-        filteredEncounters = filteredEncounters.filter(
-          e => e.service_date.substring(0, 10) <= endDate
-        )
+        filteredEncounters = filteredEncounters.filter(e => {
+          const localDate = getLocalDateString(e.service_date)
+          return localDate <= endDate
+        })
       }
 
       // Get unique person IDs from filtered encounters
@@ -213,7 +227,7 @@ export default function CustomReportBuilder({
         persons
           .filter(p => {
             if (!p.exit_date) return false
-            const exitDateStr = p.exit_date.substring(0, 10)
+            const exitDateStr = getLocalDateString(p.exit_date)
             if (startDate && endDate) {
               return exitDateStr >= startDate && exitDateStr <= endDate
             } else if (startDate) {
@@ -306,7 +320,7 @@ export default function CustomReportBuilder({
         if (!p.exit_date || !p.exit_destination) return false
 
         // Check if exit is within date range
-        const exitDateStr = p.exit_date.substring(0, 10)
+        const exitDateStr = getLocalDateString(p.exit_date)
         const inDateRange = startDate && endDate
           ? (exitDateStr >= startDate && exitDateStr <= endDate)
           : startDate
@@ -324,7 +338,7 @@ export default function CustomReportBuilder({
       // Calculate program exits breakdown by category
       const personsWithExits = filteredPersons.filter(p => {
         if (!p.exit_date || !p.exit_destination) return false
-        const exitDateStr = p.exit_date.substring(0, 10)
+        const exitDateStr = getLocalDateString(p.exit_date)
         const inDateRange = startDate && endDate
           ? (exitDateStr >= startDate && exitDateStr <= endDate)
           : startDate
@@ -340,7 +354,7 @@ export default function CustomReportBuilder({
       // Calculate returned to active from status_changes
       const returnedToActiveRecords = statusChanges.filter(sc => {
         if (sc.change_type !== 'return_to_active') return false
-        const changeDateStr = sc.change_date.substring(0, 10)
+        const changeDateStr = getLocalDateString(sc.change_date)
         if (startDate && endDate) {
           return changeDateStr >= startDate && changeDateStr <= endDate
         } else if (startDate) {
@@ -1991,7 +2005,7 @@ export default function CustomReportBuilder({
                   <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-200 mb-6">
                     <p className="text-sm text-gray-600 font-medium">Total Service Interactions</p>
                     <p className="text-4xl font-bold text-green-600 mt-1">{generatedReport.metrics.totalInteractions}</p>
-                    <p className="text-xs text-gray-500 mt-2">All encounters in this date range</p>
+                    <p className="text-xs text-gray-500 mt-2">Click any encounter to view full details</p>
                   </div>
 
                   {generatedReport.filteredEncounters.length > 0 ? (
@@ -2001,7 +2015,14 @@ export default function CustomReportBuilder({
                         {generatedReport.filteredEncounters.map((encounter, index) => {
                           const person = persons.find(p => p.id === encounter.person_id)
                           return (
-                            <div key={index} className="bg-white rounded-lg p-3 border border-green-100 shadow-sm">
+                            <div
+                              key={index}
+                              onClick={() => {
+                                setSelectedEncounter(encounter)
+                                setShowEncounterModal(true)
+                              }}
+                              className="bg-white rounded-lg p-3 border border-green-100 shadow-sm cursor-pointer hover:bg-green-50 hover:border-green-300 transition-colors"
+                            >
                               <div className="flex justify-between items-start">
                                 <div>
                                   <p className="font-semibold text-gray-900">{person?.first_name} {person?.last_name}</p>
@@ -2012,6 +2033,16 @@ export default function CustomReportBuilder({
                                   <p className="text-gray-500">{encounter.outreach_worker}</p>
                                 </div>
                               </div>
+                              <div className="flex gap-2 mt-2 flex-wrap">
+                                {encounter.naloxone_distributed && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Naloxone</span>}
+                                {encounter.mat_referral && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">MAT</span>}
+                                {encounter.detox_referral && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Detox</span>}
+                                {encounter.fentanyl_test_strips_count && encounter.fentanyl_test_strips_count > 0 && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">{encounter.fentanyl_test_strips_count} strips</span>}
+                                {encounter.transportation_provided && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Transport</span>}
+                                {encounter.co_occurring_mh_sud && <span className="text-xs bg-pink-100 text-pink-700 px-2 py-0.5 rounded">Co-occurring</span>}
+                                {encounter.placement_made && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Placement</span>}
+                              </div>
+                              <p className="text-xs text-green-600 mt-2">Click to view full details →</p>
                             </div>
                           )
                         })}
@@ -2323,6 +2354,187 @@ export default function CustomReportBuilder({
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Encounter Detail Modal */}
+      {showEncounterModal && selectedEncounter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 flex justify-between items-center rounded-t-lg">
+              <div>
+                <h4 className="text-xl font-bold">Service Interaction Details</h4>
+                <p className="text-green-100 text-sm">{new Date(selectedEncounter.service_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEncounterModal(false)
+                  setSelectedEncounter(null)
+                }}
+                className="text-white hover:text-green-200 transition-colors p-2 rounded-full hover:bg-green-500"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Client Info */}
+              {(() => {
+                const person = persons.find(p => p.id === selectedEncounter.person_id)
+                return person && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h5 className="font-semibold text-blue-700 mb-2">Client Information</h5>
+                    <p className="text-lg font-bold text-gray-900">{person.first_name} {person.last_name}</p>
+                    <p className="text-sm text-gray-600">ID: {person.client_id}</p>
+                  </div>
+                )
+              })()}
+
+              {/* Basic Encounter Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500">Location</p>
+                  <p className="font-semibold text-gray-900">{selectedEncounter.outreach_location}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500">Outreach Worker</p>
+                  <p className="font-semibold text-gray-900">{selectedEncounter.outreach_worker}</p>
+                </div>
+              </div>
+
+              {/* Harm Reduction Services */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h5 className="font-semibold text-red-700 mb-3">Harm Reduction</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Naloxone Distributed</span>
+                    <span className={`font-bold ${selectedEncounter.naloxone_distributed ? 'text-green-600' : 'text-gray-400'}`}>
+                      {selectedEncounter.naloxone_distributed ? '✓ Yes' : '✗ No'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Fentanyl Test Strips</span>
+                    <span className={`font-bold ${selectedEncounter.fentanyl_test_strips_count ? 'text-yellow-600' : 'text-gray-400'}`}>
+                      {selectedEncounter.fentanyl_test_strips_count || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Harm Reduction Education</span>
+                    <span className={`font-bold ${selectedEncounter.harm_reduction_education ? 'text-green-600' : 'text-gray-400'}`}>
+                      {selectedEncounter.harm_reduction_education ? '✓ Yes' : '✗ No'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Referrals */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h5 className="font-semibold text-purple-700 mb-3">Referrals</h5>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">MAT Referral</span>
+                    <span className={`font-bold ${selectedEncounter.mat_referral ? 'text-green-600' : 'text-gray-400'}`}>
+                      {selectedEncounter.mat_referral ? '✓ Yes' : '✗ No'}
+                    </span>
+                  </div>
+                  {selectedEncounter.mat_referral && selectedEncounter.mat_provider && (
+                    <div className="ml-4 bg-white rounded p-2">
+                      <p className="text-sm text-gray-500">Provider</p>
+                      <p className="font-semibold text-purple-700">{selectedEncounter.mat_provider}</p>
+                      {selectedEncounter.mat_type && <p className="text-sm text-gray-600">Type: {selectedEncounter.mat_type}</p>}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Detox Referral</span>
+                    <span className={`font-bold ${selectedEncounter.detox_referral ? 'text-green-600' : 'text-gray-400'}`}>
+                      {selectedEncounter.detox_referral ? '✓ Yes' : '✗ No'}
+                    </span>
+                  </div>
+                  {selectedEncounter.detox_referral && selectedEncounter.detox_provider && (
+                    <div className="ml-4 bg-white rounded p-2">
+                      <p className="text-sm text-gray-500">Provider</p>
+                      <p className="font-semibold text-orange-700">{selectedEncounter.detox_provider}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Placement */}
+              {selectedEncounter.placement_made && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h5 className="font-semibold text-green-700 mb-3">🏠 Placement Made</h5>
+                  <p className="font-bold text-green-800 text-lg">
+                    {selectedEncounter.placement_location === 'Other'
+                      ? selectedEncounter.placement_location_other
+                      : selectedEncounter.placement_location}
+                  </p>
+                </div>
+              )}
+
+              {/* Co-Occurring Conditions */}
+              {selectedEncounter.co_occurring_mh_sud && (
+                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                  <h5 className="font-semibold text-pink-700 mb-2">Co-Occurring MH/SUD</h5>
+                  <p className="text-gray-700">{selectedEncounter.co_occurring_type || 'Type not specified'}</p>
+                </div>
+              )}
+
+              {/* Other Services */}
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <h5 className="font-semibold text-indigo-700 mb-3">Other Services</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Transportation</span>
+                    <span className={`font-bold ${selectedEncounter.transportation_provided ? 'text-green-600' : 'text-gray-400'}`}>
+                      {selectedEncounter.transportation_provided ? '✓ Yes' : '✗ No'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Shower Trailer</span>
+                    <span className={`font-bold ${selectedEncounter.shower_trailer ? 'text-green-600' : 'text-gray-400'}`}>
+                      {selectedEncounter.shower_trailer ? '✓ Yes' : '✗ No'}
+                    </span>
+                  </div>
+                </div>
+                {selectedEncounter.other_services && (
+                  <div className="mt-3 bg-white rounded p-2">
+                    <p className="text-sm text-gray-500">Other Services Provided</p>
+                    <p className="text-gray-700">{selectedEncounter.other_services}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Case Management Notes */}
+              {selectedEncounter.case_management_notes && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h5 className="font-semibold text-gray-700 mb-2">Case Management Notes</h5>
+                  <p className="text-gray-700 whitespace-pre-wrap">{selectedEncounter.case_management_notes}</p>
+                </div>
+              )}
+
+              {/* High Utilizer Flag */}
+              {selectedEncounter.high_utilizer_contact && (
+                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                  <p className="font-bold text-yellow-700">⚠️ High Utilizer Contact</p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg">
+              <button
+                onClick={() => {
+                  setShowEncounterModal(false)
+                  setSelectedEncounter(null)
+                }}
+                className="w-full py-2 px-4 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
