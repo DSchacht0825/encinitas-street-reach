@@ -1394,38 +1394,68 @@ export default function CustomReportBuilder({
               </h5>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {includeClientsServed && (
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                  <div
+                    onClick={() => {
+                      setDetailModalType('clientsServed')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <p className="text-sm text-gray-600 font-medium">Clients Served</p>
                     <p className="text-3xl font-bold text-blue-600 mt-1">{generatedReport.metrics.clientsServed}</p>
-                    <p className="text-xs text-gray-500 mt-1">Unduplicated individuals</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
                   </div>
                 )}
                 {includeServiceInteractions && (
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                  <div
+                    onClick={() => {
+                      setDetailModalType('serviceInteractions')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <p className="text-sm text-gray-600 font-medium">Service Interactions</p>
                     <p className="text-3xl font-bold text-green-600 mt-1">{generatedReport.metrics.totalInteractions}</p>
-                    <p className="text-xs text-gray-500 mt-1">Total encounters</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
                   </div>
                 )}
                 {includeNaloxone && (
-                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border border-red-200">
+                  <div
+                    onClick={() => {
+                      setDetailModalType('naloxone')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border border-red-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <p className="text-sm text-gray-600 font-medium">Naloxone Distributed</p>
                     <p className="text-3xl font-bold text-red-600 mt-1">{generatedReport.metrics.naloxoneDistributed}</p>
-                    <p className="text-xs text-gray-500 mt-1">Kits given out</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
                   </div>
                 )}
                 {includeFentanylStrips && (
-                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
+                  <div
+                    onClick={() => {
+                      setDetailModalType('fentanylStrips')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <p className="text-sm text-gray-600 font-medium">Fentanyl Test Strips</p>
                     <p className="text-3xl font-bold text-yellow-600 mt-1">{generatedReport.metrics.fentanylTestStrips}</p>
-                    <p className="text-xs text-gray-500 mt-1">Total distributed</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
                   </div>
                 )}
                 {includeTotalReferrals && (
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                  <div
+                    onClick={() => {
+                      setDetailModalType('referrals')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <p className="text-sm text-gray-600 font-medium">Total Referrals</p>
                     <p className="text-3xl font-bold text-purple-600 mt-1">{generatedReport.metrics.totalReferrals}</p>
-                    <p className="text-xs text-gray-500 mt-1">MAT: {generatedReport.metrics.matReferrals}, Detox: {generatedReport.metrics.detoxReferrals}</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for breakdown</p>
                   </div>
                 )}
                 {includeHousingPlacements && (
@@ -1897,6 +1927,11 @@ export default function CustomReportBuilder({
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
               <h4 className="text-xl font-bold text-gray-900">
+                {detailModalType === 'clientsServed' && 'Clients Served Details'}
+                {detailModalType === 'serviceInteractions' && 'Service Interactions Details'}
+                {detailModalType === 'naloxone' && 'Naloxone Distribution Details'}
+                {detailModalType === 'fentanylStrips' && 'Fentanyl Test Strips Details'}
+                {detailModalType === 'referrals' && 'Referrals Breakdown'}
                 {detailModalType === 'programExits' && 'Program Exits Breakdown'}
                 {detailModalType === 'housingPlacements' && 'Housing Placements Details'}
                 {detailModalType === 'placements' && 'Placements Breakdown'}
@@ -1915,6 +1950,213 @@ export default function CustomReportBuilder({
             </div>
 
             <div className="p-6">
+              {/* Clients Served Details */}
+              {detailModalType === 'clientsServed' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Clients Served</p>
+                    <p className="text-4xl font-bold text-blue-600 mt-1">{generatedReport.metrics.clientsServed}</p>
+                    <p className="text-xs text-gray-500 mt-2">Unduplicated individuals in this date range</p>
+                  </div>
+
+                  {generatedReport.filteredPersons.length > 0 ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-blue-700 text-lg mb-3">Client List</h5>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {generatedReport.filteredPersons.map((person) => (
+                          <div key={person.id} className="bg-white rounded-lg p-3 border border-blue-100 shadow-sm flex justify-between items-center">
+                            <div>
+                              <p className="font-semibold text-gray-900">{person.first_name} {person.last_name}</p>
+                              <p className="text-sm text-gray-500">ID: {person.client_id}</p>
+                            </div>
+                            <div className="text-right text-sm text-gray-500">
+                              <p>{person.gender}</p>
+                              <p>{person.race}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No clients served in this date range.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Service Interactions Details */}
+              {detailModalType === 'serviceInteractions' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Service Interactions</p>
+                    <p className="text-4xl font-bold text-green-600 mt-1">{generatedReport.metrics.totalInteractions}</p>
+                    <p className="text-xs text-gray-500 mt-2">All encounters in this date range</p>
+                  </div>
+
+                  {generatedReport.filteredEncounters.length > 0 ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-green-700 text-lg mb-3">Encounter List</h5>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {generatedReport.filteredEncounters.map((encounter, index) => {
+                          const person = persons.find(p => p.id === encounter.person_id)
+                          return (
+                            <div key={index} className="bg-white rounded-lg p-3 border border-green-100 shadow-sm">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{person?.first_name} {person?.last_name}</p>
+                                  <p className="text-sm text-gray-500">{encounter.outreach_location}</p>
+                                </div>
+                                <div className="text-right text-sm">
+                                  <p className="text-gray-600">{new Date(encounter.service_date).toLocaleDateString()}</p>
+                                  <p className="text-gray-500">{encounter.outreach_worker}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No encounters in this date range.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Naloxone Details */}
+              {detailModalType === 'naloxone' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border-2 border-red-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Naloxone Distributed</p>
+                    <p className="text-4xl font-bold text-red-600 mt-1">{generatedReport.metrics.naloxoneDistributed}</p>
+                    <p className="text-xs text-gray-500 mt-2">Kits given out in this date range</p>
+                  </div>
+
+                  {(() => {
+                    const naloxoneEncounters = generatedReport.filteredEncounters.filter(e => e.naloxone_distributed)
+                    return naloxoneEncounters.length > 0 ? (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h5 className="font-semibold text-red-700 text-lg mb-3">Distribution Details</h5>
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {naloxoneEncounters.map((encounter, index) => {
+                            const person = persons.find(p => p.id === encounter.person_id)
+                            return (
+                              <div key={index} className="bg-white rounded-lg p-3 border border-red-100 shadow-sm flex justify-between items-center">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{person?.first_name} {person?.last_name}</p>
+                                  <p className="text-sm text-gray-500">{encounter.outreach_location}</p>
+                                </div>
+                                <div className="text-right text-sm">
+                                  <p className="text-gray-600">{new Date(encounter.service_date).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No naloxone distributed in this date range.</p>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+
+              {/* Fentanyl Strips Details */}
+              {detailModalType === 'fentanylStrips' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border-2 border-yellow-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Fentanyl Test Strips</p>
+                    <p className="text-4xl font-bold text-yellow-600 mt-1">{generatedReport.metrics.fentanylTestStrips}</p>
+                    <p className="text-xs text-gray-500 mt-2">Strips distributed in this date range</p>
+                  </div>
+
+                  {(() => {
+                    const stripEncounters = generatedReport.filteredEncounters.filter(e => e.fentanyl_test_strips_count && e.fentanyl_test_strips_count > 0)
+                    return stripEncounters.length > 0 ? (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h5 className="font-semibold text-yellow-700 text-lg mb-3">Distribution Details</h5>
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {stripEncounters.map((encounter, index) => {
+                            const person = persons.find(p => p.id === encounter.person_id)
+                            return (
+                              <div key={index} className="bg-white rounded-lg p-3 border border-yellow-100 shadow-sm flex justify-between items-center">
+                                <div>
+                                  <p className="font-semibold text-gray-900">{person?.first_name} {person?.last_name}</p>
+                                  <p className="text-sm text-gray-500">{encounter.outreach_location}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-2xl font-bold text-yellow-600">{encounter.fentanyl_test_strips_count}</p>
+                                  <p className="text-xs text-gray-500">{new Date(encounter.service_date).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No fentanyl test strips distributed in this date range.</p>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+
+              {/* Referrals Details */}
+              {detailModalType === 'referrals' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border-2 border-purple-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Referrals</p>
+                    <p className="text-4xl font-bold text-purple-600 mt-1">{generatedReport.metrics.totalReferrals}</p>
+                    <p className="text-xs text-gray-500 mt-2">MAT: {generatedReport.metrics.matReferrals}, Detox: {generatedReport.metrics.detoxReferrals}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* MAT Referrals */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-purple-700 text-lg mb-3">MAT Referrals ({generatedReport.metrics.matReferrals})</h5>
+                      {Object.keys(generatedReport.breakdowns.matByProvider).length > 0 ? (
+                        <div className="space-y-2">
+                          {Object.entries(generatedReport.breakdowns.matByProvider)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([provider, count]) => (
+                              <div key={provider} className="bg-white rounded-lg p-2 border border-purple-100 flex justify-between items-center">
+                                <span className="text-gray-700">{provider}</span>
+                                <span className="font-bold text-purple-600">{count}</span>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm italic">No MAT referrals</p>
+                      )}
+                    </div>
+
+                    {/* Detox Referrals */}
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-red-700 text-lg mb-3">Detox Referrals ({generatedReport.metrics.detoxReferrals})</h5>
+                      {Object.keys(generatedReport.breakdowns.detoxByProvider).length > 0 ? (
+                        <div className="space-y-2">
+                          {Object.entries(generatedReport.breakdowns.detoxByProvider)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([provider, count]) => (
+                              <div key={provider} className="bg-white rounded-lg p-2 border border-red-100 flex justify-between items-center">
+                                <span className="text-gray-700">{provider}</span>
+                                <span className="font-bold text-red-600">{count}</span>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm italic">No detox referrals</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {detailModalType === 'programExits' && (
                 <div className="space-y-4">
                   <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border-2 border-orange-200 mb-6">
