@@ -991,8 +991,13 @@ export default function CustomReportBuilder({
   const allUnchecked = !includeClientsServed && !includeServiceInteractions &&
                        !includeNaloxone && !includeFentanylStrips &&
                        !includeTotalReferrals && !includeReferralBreakdown &&
-                       !includeHousingPlacements && !includeReturnedToActive &&
-                       !includeByNameList && !includeInteractionsDetail
+                       !includeHousingPlacements && !includePlacements &&
+                       !includeHighUtilizerCount && !includeReturnedToActive &&
+                       !includeByNameList && !includeInteractionsDetail &&
+                       !includeByRace && !includeByEthnicity && !includeByGender &&
+                       !includeBySexualOrientation && !includeByAgeRange &&
+                       !includeByVeteranStatus && !includeByDisabilityStatus &&
+                       !includeByLivingSituation
 
   return (
     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-lg p-6 border-2 border-green-200">
