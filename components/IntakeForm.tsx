@@ -793,11 +793,11 @@ export default function IntakeForm() {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label className="ml-2 block text-sm text-gray-700">
-                  Release of Information (ROI) Signed
+                  Verbal ROI for Encinitas Approved
                 </label>
               </div>
               <p className="text-sm text-gray-500 mt-1 ml-6">
-                Check if client has signed authorization to share information with other providers
+                Check if client has given verbal authorization to share information
               </p>
             </div>
           </div>
