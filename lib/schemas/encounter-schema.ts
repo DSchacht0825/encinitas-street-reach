@@ -39,6 +39,7 @@ export const encounterFormSchema = z.object({
   placement_made: z.boolean(),
   placement_location: z.string().optional().nullable(),
   placement_location_other: z.string().optional().nullable(),
+  refused_shelter: z.boolean(),
 
   // Case Management
   high_utilizer_contact: z.boolean(),

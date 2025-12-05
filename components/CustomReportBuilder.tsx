@@ -55,6 +55,7 @@ interface Encounter {
   placement_made?: boolean
   placement_location?: string | null
   placement_location_other?: string | null
+  refused_shelter?: boolean
   high_utilizer_contact?: boolean
   case_management_notes?: string | null
 }
@@ -94,6 +95,7 @@ interface GeneratedReport {
     detoxReferrals: number
     housingPlacements: number
     placementsMade: number
+    refusedShelter: number
     highUtilizerContacts: number
     programExits: number
     returnedToActive: number
@@ -146,6 +148,7 @@ export default function CustomReportBuilder({
   const [includeReferralBreakdown, setIncludeReferralBreakdown] = useState(true)
   const [includeHousingPlacements, setIncludeHousingPlacements] = useState(true)
   const [includePlacements, setIncludePlacements] = useState(true)
+  const [includeRefusedShelter, setIncludeRefusedShelter] = useState(true)
   const [includeHighUtilizerCount, setIncludeHighUtilizerCount] = useState(true)
   const [includeReturnedToActive, setIncludeReturnedToActive] = useState(true)
   const [includeByNameList, setIncludeByNameList] = useState(false)
@@ -420,6 +423,9 @@ export default function CustomReportBuilder({
       // Calculate placements
       const placementsMade = filteredEncounters.filter(e => e.placement_made).length
 
+      // Calculate refused shelter
+      const refusedShelter = filteredEncounters.filter(e => e.refused_shelter).length
+
       // Placement breakdown by location
       const placementsByLocation = filteredEncounters
         .filter(e => e.placement_made)
@@ -599,6 +605,14 @@ export default function CustomReportBuilder({
               })
             })
         }
+      }
+
+      if (includeRefusedShelter) {
+        reportData.push({
+          'Metric': 'Refused Shelter',
+          'Value': refusedShelter,
+          'Description': 'Clients who declined shelter placement',
+        })
       }
 
       if (includeReturnedToActive) {
@@ -945,6 +959,7 @@ export default function CustomReportBuilder({
           detoxReferrals,
           housingPlacements,
           placementsMade,
+          refusedShelter,
           highUtilizerContacts,
           programExits,
           returnedToActive,
@@ -992,7 +1007,7 @@ export default function CustomReportBuilder({
                        !includeNaloxone && !includeFentanylStrips &&
                        !includeTotalReferrals && !includeReferralBreakdown &&
                        !includeHousingPlacements && !includePlacements &&
-                       !includeHighUtilizerCount && !includeReturnedToActive &&
+                       !includeRefusedShelter && !includeHighUtilizerCount && !includeReturnedToActive &&
                        !includeByNameList && !includeInteractionsDetail &&
                        !includeByRace && !includeByEthnicity && !includeByGender &&
                        !includeBySexualOrientation && !includeByAgeRange &&
@@ -1135,6 +1150,16 @@ export default function CustomReportBuilder({
               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700 font-medium">🏠 Placements (BCNC, La Posada, etc.)</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-red-50 p-2 rounded border border-red-200">
+            <input
+              type="checkbox"
+              checked={includeRefusedShelter}
+              onChange={(e) => setIncludeRefusedShelter(e.target.checked)}
+              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700 font-medium">🚫 Refused Shelter</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-50 p-2 rounded border border-yellow-200">
@@ -1501,6 +1526,19 @@ export default function CustomReportBuilder({
                     <p className="text-sm text-gray-600 font-medium">🏠 Placements</p>
                     <p className="text-3xl font-bold text-green-600 mt-1">{generatedReport.metrics.placementsMade}</p>
                     <p className="text-xs text-gray-500 mt-1">Click for breakdown</p>
+                  </div>
+                )}
+                {includeRefusedShelter && (
+                  <div
+                    onClick={() => {
+                      setDetailModalType('refusedShelter')
+                      setShowDetailModal(true)
+                    }}
+                    className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border-2 border-red-300 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
+                    <p className="text-sm text-gray-600 font-medium">🚫 Refused Shelter</p>
+                    <p className="text-3xl font-bold text-red-600 mt-1">{generatedReport.metrics.refusedShelter}</p>
+                    <p className="text-xs text-gray-500 mt-1">Click for details</p>
                   </div>
                 )}
                 {includeHighUtilizerCount && (
@@ -1954,6 +1992,7 @@ export default function CustomReportBuilder({
                 {detailModalType === 'programExits' && 'Program Exits Breakdown'}
                 {detailModalType === 'housingPlacements' && 'Housing Placements Details'}
                 {detailModalType === 'placements' && 'Placements Breakdown'}
+                {detailModalType === 'refusedShelter' && 'Refused Shelter Details'}
                 {detailModalType === 'returnedToActive' && 'Returned to Active Details'}
                 {detailModalType === 'highUtilizers' && 'High Utilizers Details'}
               </h4>
@@ -2319,6 +2358,51 @@ export default function CustomReportBuilder({
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       <p>No placements recorded in this date range.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {detailModalType === 'refusedShelter' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border-2 border-red-200 mb-6">
+                    <p className="text-sm text-gray-600 font-medium">Total Refused Shelter</p>
+                    <p className="text-4xl font-bold text-red-600 mt-1">{generatedReport.metrics.refusedShelter}</p>
+                    <p className="text-xs text-gray-500 mt-2">Clients who declined shelter placement in this date range</p>
+                  </div>
+
+                  {generatedReport.filteredEncounters.filter(e => e.refused_shelter).length > 0 ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-red-700 text-lg mb-3">Refused Shelter Encounters</h5>
+                      <div className="space-y-3">
+                        {generatedReport.filteredEncounters
+                          .filter(e => e.refused_shelter)
+                          .map((encounter, index) => {
+                            const person = generatedReport.filteredPersons.find(p => p.id === encounter.person_id)
+                            return (
+                              <div key={index} className="bg-white rounded-lg p-3 border border-red-100 shadow-sm">
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <p className="font-semibold text-gray-900">
+                                      {person ? `${person.first_name} ${person.last_name}` : 'Unknown'}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {new Date(encounter.service_date).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  <div className="text-right text-sm text-gray-500">
+                                    <p>{encounter.outreach_location}</p>
+                                    <p>{encounter.outreach_worker}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No refused shelter encounters in this date range.</p>
                     </div>
                   )}
                 </div>
