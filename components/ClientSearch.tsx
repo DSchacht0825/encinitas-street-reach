@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { fuzzySearchPersons } from '@/lib/utils/duplicate-detection'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface Person {
   id: string
@@ -13,12 +14,16 @@ interface Person {
   last_name: string
   nickname: string | null
   date_of_birth: string
+  photo_url: string | null
+  phone_number: string | null
   exit_date?: string | null
   exit_destination?: string | null
   last_encounter?: {
     service_date: string
     outreach_location: string
+    case_management_notes: string | null
   }
+  case_notes?: string[] // All case management notes from encounters
 }
 
 // Helper function to calculate age from date of birth
@@ -40,6 +45,7 @@ export default function ClientSearch() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSearching, setIsSearching] = useState(false)
   const [showExitedOnly, setShowExitedOnly] = useState(false)
+  const [expandedClient, setExpandedClient] = useState<string | null>(null)
 
   // Load all persons on component mount
   useEffect(() => {
@@ -69,7 +75,7 @@ export default function ClientSearch() {
     const supabase = createClient()
 
     try {
-      // Get all persons with their most recent encounter
+      // Get all persons with their encounters including case notes
       const { data: persons, error } = await supabase
         .from('persons')
         .select(`
@@ -79,18 +85,21 @@ export default function ClientSearch() {
           last_name,
           nickname,
           date_of_birth,
+          photo_url,
+          phone_number,
           exit_date,
           exit_destination,
           encounters (
             service_date,
-            outreach_location
+            outreach_location,
+            case_management_notes
           )
         `)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      // Process the data to include only the most recent encounter
+      // Process the data to include only the most recent encounter and all case notes
       const processedPersons = persons?.map((person: {
         id: string
         client_id: string
@@ -98,18 +107,29 @@ export default function ClientSearch() {
         last_name: string
         nickname: string | null
         date_of_birth: string
+        photo_url: string | null
+        phone_number: string | null
         exit_date?: string | null
         exit_destination?: string | null
-        encounters?: Array<{ service_date: string; outreach_location: string }>
-      }) => ({
-        ...person,
-        last_encounter: person.encounters && person.encounters.length > 0
-          ? person.encounters.sort((a, b) =>
-              new Date(b.service_date).getTime() - new Date(a.service_date).getTime()
-            )[0]
-          : undefined,
-        encounters: undefined, // Remove the full encounters array
-      })) || []
+        encounters?: Array<{ service_date: string; outreach_location: string; case_management_notes: string | null }>
+      }) => {
+        // Sort encounters by date (most recent first)
+        const sortedEncounters = person.encounters?.sort((a, b) =>
+          new Date(b.service_date).getTime() - new Date(a.service_date).getTime()
+        ) || []
+
+        // Collect all non-empty case notes
+        const caseNotes = sortedEncounters
+          .filter(e => e.case_management_notes && e.case_management_notes.trim())
+          .map(e => `${format(new Date(e.service_date), 'MM/dd/yyyy')}: ${e.case_management_notes}`)
+
+        return {
+          ...person,
+          last_encounter: sortedEncounters.length > 0 ? sortedEncounters[0] : undefined,
+          case_notes: caseNotes,
+          encounters: undefined, // Remove the full encounters array
+        }
+      }) || []
 
       setAllPersons(processedPersons)
       setFilteredPersons(processedPersons.slice(0, 20))
@@ -251,81 +271,167 @@ export default function ClientSearch() {
       ) : (
         <div className="space-y-2">
           {filteredPersons.map((person) => (
-            <Link
+            <div
               key={person.id}
-              href={`/client/${person.id}`}
-              className={`block border rounded-lg p-4 hover:shadow-md transition-all ${
+              className={`border rounded-lg overflow-hidden transition-all ${
                 person.exit_date
-                  ? 'bg-amber-50 border-amber-200 hover:border-amber-400'
-                  : 'bg-white border-gray-200 hover:border-blue-500'
-              }`}
+                  ? 'bg-amber-50 border-amber-200'
+                  : 'bg-white border-gray-200'
+              } ${expandedClient === person.id ? 'shadow-lg ring-2 ring-blue-500' : 'hover:shadow-md'}`}
             >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {person.first_name} {person.last_name}
-                      {person.nickname && (
-                        <span className="text-sm text-gray-600 ml-2 font-normal">
-                          (aka {person.nickname})
-                        </span>
-                      )}
-                    </h3>
-                    {person.exit_date && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-200 text-amber-800">
-                        Exited
-                      </span>
+              {/* Clickable header to expand/collapse */}
+              <button
+                onClick={() => setExpandedClient(expandedClient === person.id ? null : person.id)}
+                className="w-full p-4 text-left"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Client Photo */}
+                  <div className="flex-shrink-0">
+                    {person.photo_url ? (
+                      <div className="relative w-16 h-16">
+                        <Image
+                          src={person.photo_url}
+                          alt={`${person.first_name} ${person.last_name}`}
+                          fill
+                          className="rounded-full object-cover border-2 border-gray-200"
+                          sizes="64px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
                     )}
                   </div>
-                  <div className="mt-1 space-y-1 text-sm text-gray-600">
-                    <p>
-                      <span className="font-medium">ID:</span> {person.client_id} |{' '}
-                      <span className="font-medium">Age:</span> {calculateAge(person.date_of_birth)} |{' '}
-                      <span className="font-medium">DOB:</span>{' '}
-                      {format(new Date(person.date_of_birth), 'MM/dd/yyyy')}
-                    </p>
-                    {person.exit_date ? (
-                      <p className="text-amber-700">
-                        <span className="font-medium">Exited:</span>{' '}
-                        {format(new Date(person.exit_date), 'MM/dd/yyyy')}
-                        {person.exit_destination && (
-                          <span> - {person.exit_destination}</span>
+
+                  {/* Client Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {person.first_name} {person.last_name}
+                        {person.nickname && (
+                          <span className="text-sm text-gray-600 ml-2 font-normal">
+                            (aka {person.nickname})
+                          </span>
                         )}
+                      </h3>
+                      {person.exit_date && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-200 text-amber-800">
+                          Exited
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 space-y-1 text-sm text-gray-600">
+                      <p>
+                        <span className="font-medium">ID:</span> {person.client_id} |{' '}
+                        <span className="font-medium">Age:</span> {calculateAge(person.date_of_birth)} |{' '}
+                        <span className="font-medium">DOB:</span>{' '}
+                        {format(new Date(person.date_of_birth), 'MM/dd/yyyy')}
                       </p>
-                    ) : person.last_encounter ? (
-                      <p className="text-gray-500">
-                        <span className="font-medium">Last seen:</span>{' '}
-                        {format(
-                          new Date(person.last_encounter.service_date),
-                          'MM/dd/yyyy'
-                        )}{' '}
-                        at {person.last_encounter.outreach_location}
-                      </p>
-                    ) : null}
+                      {person.phone_number && (
+                        <p>
+                          <span className="font-medium">Phone:</span>{' '}
+                          <a
+                            href={`tel:${person.phone_number}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-blue-600 hover:underline"
+                          >
+                            {person.phone_number}
+                          </a>
+                        </p>
+                      )}
+                      {person.exit_date ? (
+                        <p className="text-amber-700">
+                          <span className="font-medium">Exited:</span>{' '}
+                          {format(new Date(person.exit_date), 'MM/dd/yyyy')}
+                          {person.exit_destination && (
+                            <span> - {person.exit_destination}</span>
+                          )}
+                        </p>
+                      ) : person.last_encounter ? (
+                        <p className="text-gray-500">
+                          <span className="font-medium">Last seen:</span>{' '}
+                          {format(
+                            new Date(person.last_encounter.service_date),
+                            'MM/dd/yyyy'
+                          )}{' '}
+                          at {person.last_encounter.outreach_location}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Expand/Collapse Icon */}
+                  <div className="flex-shrink-0 flex items-center">
+                    <svg
+                      className={`h-5 w-5 text-gray-400 transition-transform ${expandedClient === person.id ? 'rotate-90' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {person.exit_date && (
-                    <span className="text-xs text-amber-600 font-medium">
-                      Click to reactivate
-                    </span>
+              </button>
+
+              {/* Expanded Details Section */}
+              {expandedClient === person.id && (
+                <div className="border-t border-gray-200 bg-gray-50 p-4">
+                  {/* Case Notes */}
+                  {person.case_notes && person.case_notes.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Case Notes</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {person.case_notes.map((note, index) => (
+                          <p key={index} className="text-sm text-gray-700 bg-white p-2 rounded border border-gray-200">
+                            {note}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+
+                  {/* No case notes message */}
+                  {(!person.case_notes || person.case_notes.length === 0) && (
+                    <p className="text-sm text-gray-500 italic mb-4">No case notes recorded yet.</p>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <Link
+                      href={`/client/${person.id}`}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      View Full Profile
+                    </Link>
+                    {!person.exit_date && (
+                      <Link
+                        href={`/client/${person.id}/encounter/new`}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white text-center rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        New Service Interaction
+                      </Link>
+                    )}
+                    {person.exit_date && (
+                      <Link
+                        href={`/client/${person.id}`}
+                        className="flex-1 px-4 py-2 bg-amber-600 text-white text-center rounded-lg hover:bg-amber-700 transition-colors font-medium"
+                      >
+                        Reactivate Client
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
+              )}
+            </div>
           ))}
         </div>
       )}

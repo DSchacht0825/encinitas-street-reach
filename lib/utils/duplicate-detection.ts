@@ -74,17 +74,17 @@ export async function checkForDuplicates(
  * @param persons - Array of persons to search through
  * @returns Filtered and sorted array of persons
  */
-export function fuzzySearchPersons(
+export function fuzzySearchPersons<T extends {
+  id: string
+  client_id: string
+  first_name: string
+  last_name: string
+  nickname: string | null
+  date_of_birth: string
+}>(
   searchTerm: string,
-  persons: Array<{
-    id: string
-    client_id: string
-    first_name: string
-    last_name: string
-    nickname: string | null
-    date_of_birth: string
-  }>
-) {
+  persons: T[]
+): T[] {
   if (!searchTerm || searchTerm.trim() === '') {
     return persons
   }
