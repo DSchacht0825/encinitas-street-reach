@@ -32,6 +32,8 @@ interface Encounter {
   naloxone_date?: string | null
   fentanyl_test_strips_count?: number | null
   transportation_provided: boolean
+  placement_made?: boolean
+  placement_location?: string | null
 }
 
 interface MetricsGridProps {
@@ -137,12 +139,12 @@ export default function MetricsGrid({ metrics, persons, encounters, demographics
     }))
 
   const exitsDetails = encounters
-    .filter(e => e.mat_referral || e.detox_referral)
+    .filter(e => e.placement_made)
     .map(e => ({
       id: e.id || e.person_id + e.service_date,
       name: persons.find(p => p.id === e.person_id)?.first_name + ' ' + persons.find(p => p.id === e.person_id)?.last_name || 'Unknown',
       date: new Date(e.service_date).toLocaleDateString(),
-      details: e.mat_referral ? 'MAT Referral' : 'Detox Referral',
+      details: e.placement_location || 'Placement',
     }))
 
   return (
@@ -246,7 +248,7 @@ export default function MetricsGrid({ metrics, persons, encounters, demographics
         value={metrics.exitsFromHomelessness}
         color="teal"
         detailItems={exitsDetails}
-        detailTitle="Exits (MAT/Detox Referrals)"
+        detailTitle="Exits (Placements Made)"
         icon={
           <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />

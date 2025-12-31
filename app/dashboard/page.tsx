@@ -158,9 +158,9 @@ export default async function DashboardPage({
     // 1. Number of unduplicated individuals served (filtered by date range)
     unduplicatedIndividuals: personsInRange.length,
 
-    // 2. Exits from unsheltered homelessness (detox, shelter, treatment referrals)
+    // 2. Exits from unsheltered homelessness (placements made)
     exitsFromHomelessness: allEncounters.filter(
-      (e) => e.detox_referral || e.mat_referral
+      (e) => e.placement_made
     ).length,
 
     // 3. Placements made

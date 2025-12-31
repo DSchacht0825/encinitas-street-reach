@@ -71,6 +71,7 @@ export const CO_OCCURRING_TYPES = [
 export const PLACEMENT_LOCATIONS = [
   'BCNC',
   'Detox',
+  'East County Transitional Living',
   'La Posada',
   'Vista',
   'Victory Outreach',
