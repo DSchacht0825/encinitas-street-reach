@@ -16,14 +16,15 @@ function calculateAge(dob: string): number {
   return age
 }
 
-export default async function ClientProfilePage({ params }: { params: { id: string } }) {
+export default async function ClientProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
 
   // Fetch person details
   const { data, error } = await supabase
     .from('persons')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !data) {
@@ -58,7 +59,7 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
   const { data: encounterData, count: encounterCount } = await supabase
     .from('encounters')
     .select('*', { count: 'exact' })
-    .eq('person_id', params.id)
+    .eq('person_id', id)
     .order('service_date', { ascending: false })
 
   // Type assertion for encounter data
@@ -167,9 +168,28 @@ export default async function ClientProfilePage({ params }: { params: { id: stri
             </div>
           </div>
           <div className="flex gap-3">
+            <Link
+              href={`/client/${id}/edit`}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium inline-flex items-center"
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Edit Profile
+            </Link>
             {!person.exit_date && (
               <Link
-                href={`/client/${params.id}/encounter/new`}
+                href={`/client/${id}/encounter/new`}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium inline-flex items-center"
               >
                 <svg

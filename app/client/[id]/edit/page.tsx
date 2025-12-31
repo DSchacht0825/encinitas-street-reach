@@ -1,24 +1,17 @@
-import ServiceInteractionForm from '@/components/ServiceInteractionForm'
+import ClientEditForm from '@/components/ClientEditForm'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 
-type PersonData = {
-  id: string
-  first_name: string
-  last_name: string
-  client_id: string
-}
-
-export default async function NewEncounterPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
-  // Fetch the person's details
+  // Fetch person details
   const { data, error } = await supabase
     .from('persons')
-    .select('id, first_name, last_name, client_id')
+    .select('*')
     .eq('id', id)
     .single()
 
@@ -26,8 +19,40 @@ export default async function NewEncounterPage({ params }: { params: Promise<{ i
     notFound()
   }
 
-  const person = data as PersonData
-  const fullName = `${person.first_name} ${person.last_name}`
+  const person = data as {
+    id: string
+    client_id: string
+    first_name: string
+    last_name: string
+    nickname?: string | null
+    phone_number?: string | null
+    photo_url?: string | null
+    date_of_birth: string
+    gender: string
+    race: string
+    ethnicity: string
+    sexual_orientation?: string | null
+    preferred_language?: string | null
+    cultural_lived_experience?: string | null
+    veteran_status: boolean
+    disability_status: boolean
+    disability_type?: string | null
+    chronic_homeless: boolean
+    domestic_violence_victim?: boolean
+    chronic_health?: boolean
+    mental_health?: boolean
+    addiction?: string | null
+    living_situation: string
+    length_of_time_homeless?: string | null
+    evictions?: number | null
+    income?: string | null
+    income_amount?: number | null
+    support_system?: string | null
+    enrollment_date: string
+    case_manager?: string | null
+    referral_source?: string | null
+    release_of_information?: boolean
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,18 +101,18 @@ export default async function NewEncounterPage({ params }: { params: Promise<{ i
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            Back to {fullName}&apos;s Profile
+            Back to Profile
           </Link>
           <h2 className="text-3xl font-bold text-gray-900 mt-4">
-            New Service Interaction
+            Edit Client Profile
           </h2>
           <p className="text-gray-600 mt-2">
-            Record services provided to {fullName} (ID: {person.client_id})
+            Editing {person.first_name} {person.last_name} (ID: {person.client_id})
           </p>
         </div>
 
-        {/* Service Interaction Form */}
-        <ServiceInteractionForm personId={person.id} personName={fullName} />
+        {/* Edit Form */}
+        <ClientEditForm person={person} />
       </div>
     </div>
   )
