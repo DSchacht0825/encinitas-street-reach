@@ -15,7 +15,7 @@ import MetricsGrid from '@/components/MetricsGrid'
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { start_date?: string; end_date?: string }
+  searchParams: Promise<{ start_date?: string; end_date?: string }>
 }) {
   // Check if user is admin - redirect if not
   const userIsAdmin = await isAdmin()
@@ -25,9 +25,10 @@ export default async function DashboardPage({
 
   const supabase = await createClient()
 
-  // Parse date range from query params
-  const startDate = searchParams.start_date || null
-  const endDate = searchParams.end_date || null
+  // Parse date range from query params (must await in Next.js 15+)
+  const params = await searchParams
+  const startDate = params.start_date || null
+  const endDate = params.end_date || null
 
   // Fetch ALL encounters for CustomReportBuilder (unfiltered)
   const { data: allEncountersData, error: allEncountersError } = await supabase
