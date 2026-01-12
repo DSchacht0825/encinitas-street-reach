@@ -41,10 +41,21 @@ export default async function DashboardPage({
   let dashboardEncountersQuery = supabase.from('encounters').select('*')
 
   if (startDate && endDate) {
+    // Both dates provided: filter between range
     const startTimestamp = `${startDate}T00:00:00`
     const endTimestamp = `${endDate}T23:59:59`
     dashboardEncountersQuery = dashboardEncountersQuery
       .gte('service_date', startTimestamp)
+      .lte('service_date', endTimestamp)
+  } else if (startDate) {
+    // Only start date: filter from start date onwards
+    const startTimestamp = `${startDate}T00:00:00`
+    dashboardEncountersQuery = dashboardEncountersQuery
+      .gte('service_date', startTimestamp)
+  } else if (endDate) {
+    // Only end date: filter up to end date
+    const endTimestamp = `${endDate}T23:59:59`
+    dashboardEncountersQuery = dashboardEncountersQuery
       .lte('service_date', endTimestamp)
   }
 
@@ -146,7 +157,7 @@ export default async function DashboardPage({
 
   // Get persons who had encounters in the date range (for filtered demographics)
   const personIdsInRange = new Set(allEncounters.map(e => e.person_id))
-  const personsInRange = startDate && endDate
+  const personsInRange = (startDate || endDate)
     ? allPersons.filter(p => personIdsInRange.has(p.id))
     : allPersons
 
@@ -218,9 +229,13 @@ export default async function DashboardPage({
   // Program exits breakdown - filter by date range if specified
   const exitedPersons = allPersons.filter((p) => {
     if (!p.exit_date) return false
+    const exitDateStr = getLocalDateString(p.exit_date)
     if (startDate && endDate) {
-      const exitDateStr = getLocalDateString(p.exit_date)
       return exitDateStr >= startDate && exitDateStr <= endDate
+    } else if (startDate) {
+      return exitDateStr >= startDate
+    } else if (endDate) {
+      return exitDateStr <= endDate
     }
     return true // No date filter, show all exits
   })
@@ -405,10 +420,14 @@ export default async function DashboardPage({
               </Link>
             )}
           </form>
-          {startDate && endDate && (
+          {(startDate || endDate) && (
             <p className="text-sm text-gray-600 mt-3">
-              Showing data from {format(new Date(startDate), 'MMM dd, yyyy')} to{' '}
-              {format(new Date(endDate), 'MMM dd, yyyy')}
+              {startDate && endDate
+                ? `Showing data from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}`
+                : startDate
+                  ? `Showing data from ${format(new Date(startDate), 'MMM dd, yyyy')} onwards`
+                  : `Showing data up to ${format(new Date(endDate!), 'MMM dd, yyyy')}`
+              }
             </p>
           )}
         </div>
@@ -431,9 +450,14 @@ export default async function DashboardPage({
             </svg>
             <h3 className="text-xl font-bold text-gray-900">
               Custom Reports Summary
-              {startDate && endDate && (
+              {(startDate || endDate) && (
                 <span className="text-sm font-normal text-gray-600 ml-2">
-                  ({format(new Date(startDate), 'MMM dd, yyyy')} - {format(new Date(endDate), 'MMM dd, yyyy')})
+                  {startDate && endDate
+                    ? `(${format(new Date(startDate), 'MMM dd, yyyy')} - ${format(new Date(endDate), 'MMM dd, yyyy')})`
+                    : startDate
+                      ? `(From ${format(new Date(startDate), 'MMM dd, yyyy')})`
+                      : `(Up to ${format(new Date(endDate!), 'MMM dd, yyyy')})`
+                  }
                 </span>
               )}
             </h3>
