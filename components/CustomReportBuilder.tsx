@@ -151,6 +151,8 @@ export default function CustomReportBuilder({
   const [includeRefusedShelter, setIncludeRefusedShelter] = useState(true)
   const [includeHighUtilizerCount, setIncludeHighUtilizerCount] = useState(true)
   const [includeReturnedToActive, setIncludeReturnedToActive] = useState(true)
+  const [includeInflows, setIncludeInflows] = useState(true)
+  const [includeOutflows, setIncludeOutflows] = useState(true)
   const [includeByNameList, setIncludeByNameList] = useState(false)
   const [includeInteractionsDetail, setIncludeInteractionsDetail] = useState(false)
 
@@ -426,6 +428,46 @@ export default function CustomReportBuilder({
       // Calculate refused shelter
       const refusedShelter = filteredEncounters.filter(e => e.refused_shelter).length
 
+      // Calculate inflows (newly enrolled in date range)
+      const inflowPersons = persons.filter(p => {
+        const enrollmentDateStr = getLocalDateString(p.enrollment_date)
+        if (startDate && endDate) {
+          return enrollmentDateStr >= startDate && enrollmentDateStr <= endDate
+        } else if (startDate) {
+          return enrollmentDateStr >= startDate
+        } else if (endDate) {
+          return enrollmentDateStr <= endDate
+        }
+        return true
+      })
+
+      // Calculate outflows (exits to housed/sheltered/detox)
+      const permanentHousingDests = [
+        'Owned by client, no ongoing subsidy',
+        'Owned by client, with ongoing subsidy (mortgage, VA, etc.)',
+        'Rental by client, no ongoing subsidy',
+        'Rental by client, with VASH subsidy',
+        'Rental by client, with other ongoing housing subsidy (HCV, public housing, CoC-RRH, etc.)',
+        'Permanent housing for formerly homeless persons (CoC, ESG, or other funding)',
+        'Staying or living with family, permanent tenure',
+        'Staying or living with friends, permanent tenure',
+      ]
+      const shelterDests = [
+        'Emergency shelter (including hotel/motel paid for with voucher)',
+        'Transitional housing for homeless persons (including youth)',
+        'Staying or living with family, temporary tenure',
+        'Staying or living with friends, temporary tenure',
+        'Hotel or motel paid for without emergency shelter voucher',
+        'Foster care home or foster care group home',
+        'Residential project or halfway house with no homeless criteria (e.g., sober living)',
+        'Safe Haven',
+      ]
+      const detoxDests = ['Substance abuse treatment facility or detox center']
+
+      const outflowHoused = personsWithExits.filter(p => p.exit_destination && permanentHousingDests.includes(p.exit_destination))
+      const outflowSheltered = personsWithExits.filter(p => p.exit_destination && shelterDests.includes(p.exit_destination))
+      const outflowDetox = personsWithExits.filter(p => p.exit_destination && detoxDests.includes(p.exit_destination))
+
       // Placement breakdown by location
       const placementsByLocation = filteredEncounters
         .filter(e => e.placement_made)
@@ -567,6 +609,85 @@ export default function CustomReportBuilder({
             'Description': '',
           })
         })
+      }
+
+      if (includeInflows) {
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+        })
+        reportData.push({
+          'Metric': '=== INFLOWS ===',
+          'Value': '',
+          'Description': '',
+        })
+        reportData.push({
+          'Metric': 'Total Inflows',
+          'Value': inflowPersons.length,
+          'Description': 'Newly enrolled clients in date range',
+        })
+        if (inflowPersons.length > 0) {
+          reportData.push({
+            'Metric': 'Inflow Details',
+            'Value': '',
+            'Description': '',
+          })
+          inflowPersons.slice(0, 50).forEach(p => {
+            reportData.push({
+              'Metric': `  ${p.first_name} ${p.last_name}`,
+              'Value': p.client_id,
+              'Description': `Enrolled: ${getLocalDateString(p.enrollment_date)}`,
+            })
+          })
+        }
+      }
+
+      if (includeOutflows) {
+        reportData.push({
+          'Metric': '',
+          'Value': '',
+          'Description': '',
+        })
+        reportData.push({
+          'Metric': '=== OUTFLOWS ===',
+          'Value': '',
+          'Description': '',
+        })
+        reportData.push({
+          'Metric': 'Total Outflows',
+          'Value': outflowHoused.length + outflowSheltered.length + outflowDetox.length,
+          'Description': 'Exits to housing, shelter, or detox',
+        })
+        reportData.push({
+          'Metric': '  Housed',
+          'Value': outflowHoused.length,
+          'Description': 'Exits to permanent housing',
+        })
+        reportData.push({
+          'Metric': '  Sheltered',
+          'Value': outflowSheltered.length,
+          'Description': 'Exits to shelter/transitional',
+        })
+        reportData.push({
+          'Metric': '  Detox',
+          'Value': outflowDetox.length,
+          'Description': 'Exits to detox/treatment',
+        })
+        if (outflowHoused.length + outflowSheltered.length + outflowDetox.length > 0) {
+          reportData.push({
+            'Metric': 'Outflow Details',
+            'Value': '',
+            'Description': '',
+          })
+          ;[...outflowHoused, ...outflowSheltered, ...outflowDetox].slice(0, 50).forEach(p => {
+            reportData.push({
+              'Metric': `  ${p.first_name} ${p.last_name}`,
+              'Value': p.client_id,
+              'Description': `${p.exit_destination?.split('(')[0].trim() || 'Unknown'} - ${getLocalDateString(p.exit_date!)}`,
+            })
+          })
+        }
       }
 
       if (includeHousingPlacements) {
@@ -1180,6 +1301,26 @@ export default function CustomReportBuilder({
               className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700 font-medium">↩️ Returned to Active</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded border border-green-200">
+            <input
+              type="checkbox"
+              checked={includeInflows}
+              onChange={(e) => setIncludeInflows(e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700 font-medium">📥 Inflows (New Enrollments)</span>
+          </label>
+
+          <label className="flex items-center space-x-2 cursor-pointer hover:bg-amber-50 p-2 rounded border border-amber-200">
+            <input
+              type="checkbox"
+              checked={includeOutflows}
+              onChange={(e) => setIncludeOutflows(e.target.checked)}
+              className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700 font-medium">📤 Outflows (Housed/Sheltered/Detox)</span>
           </label>
 
           <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">

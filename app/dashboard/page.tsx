@@ -250,6 +250,48 @@ export default async function DashboardPage({
     }, {} as Record<string, number>),
   }
 
+  // Inflows - newly enrolled clients in date range
+  const inflows = allPersons.filter((p) => {
+    const enrollmentDateStr = getLocalDateString(p.enrollment_date)
+    if (startDate && endDate) {
+      return enrollmentDateStr >= startDate && enrollmentDateStr <= endDate
+    } else if (startDate) {
+      return enrollmentDateStr >= startDate
+    } else if (endDate) {
+      return enrollmentDateStr <= endDate
+    }
+    return true
+  })
+
+  // Outflows - exits categorized by type (housed, sheltered, detox)
+  const permanentHousingDests = [
+    'Owned by client, no ongoing subsidy',
+    'Owned by client, with ongoing subsidy (mortgage, VA, etc.)',
+    'Rental by client, no ongoing subsidy',
+    'Rental by client, with VASH subsidy',
+    'Rental by client, with other ongoing housing subsidy (HCV, public housing, CoC-RRH, etc.)',
+    'Permanent housing for formerly homeless persons (CoC, ESG, or other funding)',
+    'Staying or living with family, permanent tenure',
+    'Staying or living with friends, permanent tenure',
+  ]
+  const shelterDests = [
+    'Emergency shelter (including hotel/motel paid for with voucher)',
+    'Transitional housing for homeless persons (including youth)',
+    'Staying or living with family, temporary tenure',
+    'Staying or living with friends, temporary tenure',
+    'Hotel or motel paid for without emergency shelter voucher',
+    'Foster care home or foster care group home',
+    'Residential project or halfway house with no homeless criteria (e.g., sober living)',
+    'Safe Haven',
+  ]
+  const detoxDests = ['Substance abuse treatment facility or detox center']
+
+  const outflows = {
+    housed: exitedPersons.filter(p => p.exit_destination && permanentHousingDests.includes(p.exit_destination)),
+    sheltered: exitedPersons.filter(p => p.exit_destination && shelterDests.includes(p.exit_destination)),
+    detox: exitedPersons.filter(p => p.exit_destination && detoxDests.includes(p.exit_destination)),
+  }
+
   // Service interaction types
   const serviceTypes = {
     caseManagement: allEncounters.filter((e) => e.case_management_notes).length,
@@ -500,6 +542,79 @@ export default async function DashboardPage({
               <p className="text-3xl font-bold text-purple-600 mt-1">{metrics.matDetoxReferrals}</p>
               <p className="text-xs text-gray-500 mt-1">MAT & Detox combined</p>
             </div>
+          </div>
+        </div>
+
+        {/* Inflows & Outflows Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Inflows Card */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-lg p-6 border-2 border-green-200">
+            <div className="flex items-center mb-4">
+              <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <h3 className="text-xl font-bold text-gray-900">Inflows</h3>
+            </div>
+            <p className="text-4xl font-bold text-green-600">{inflows.length}</p>
+            <p className="text-sm text-gray-600 mt-2">Newly enrolled clients</p>
+            {inflows.length > 0 && (
+              <div className="mt-4 max-h-48 overflow-y-auto">
+                <p className="text-xs font-medium text-gray-500 mb-2">Recent enrollments:</p>
+                {inflows.slice(0, 10).map((p) => (
+                  <div key={p.id} className="text-sm py-1 border-b border-green-100">
+                    <span className="font-medium">{p.first_name} {p.last_name}</span>
+                    <span className="text-gray-500 ml-2">
+                      {format(new Date(p.enrollment_date), 'MM/dd/yyyy')}
+                    </span>
+                  </div>
+                ))}
+                {inflows.length > 10 && (
+                  <p className="text-xs text-gray-500 mt-2">+{inflows.length - 10} more</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Outflows Card */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg shadow-lg p-6 border-2 border-amber-200">
+            <div className="flex items-center mb-4">
+              <svg className="w-6 h-6 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <h3 className="text-xl font-bold text-gray-900">Outflows</h3>
+            </div>
+            <p className="text-4xl font-bold text-amber-600">{outflows.housed.length + outflows.sheltered.length + outflows.detox.length}</p>
+            <p className="text-sm text-gray-600 mt-2">Exits to housing, shelter, or detox</p>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="bg-white rounded p-2 text-center">
+                <p className="text-2xl font-bold text-blue-600">{outflows.housed.length}</p>
+                <p className="text-xs text-gray-600">Housed</p>
+              </div>
+              <div className="bg-white rounded p-2 text-center">
+                <p className="text-2xl font-bold text-teal-600">{outflows.sheltered.length}</p>
+                <p className="text-xs text-gray-600">Sheltered</p>
+              </div>
+              <div className="bg-white rounded p-2 text-center">
+                <p className="text-2xl font-bold text-purple-600">{outflows.detox.length}</p>
+                <p className="text-xs text-gray-600">Detox</p>
+              </div>
+            </div>
+            {(outflows.housed.length + outflows.sheltered.length + outflows.detox.length) > 0 && (
+              <div className="mt-4 max-h-32 overflow-y-auto">
+                <p className="text-xs font-medium text-gray-500 mb-2">Recent outflows:</p>
+                {[...outflows.housed, ...outflows.sheltered, ...outflows.detox]
+                  .sort((a, b) => new Date(b.exit_date!).getTime() - new Date(a.exit_date!).getTime())
+                  .slice(0, 5)
+                  .map((p) => (
+                    <div key={p.id} className="text-sm py-1 border-b border-amber-100">
+                      <span className="font-medium">{p.first_name} {p.last_name}</span>
+                      <span className="text-gray-500 ml-2 text-xs">
+                        {p.exit_destination?.split('(')[0].trim()}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
 

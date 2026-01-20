@@ -129,6 +129,63 @@ export default function ServiceInteractionForm({
 
       if (error) throw error
 
+      // Auto-exit client if placed in shelter, detox, or program
+      // Note: "Shelter Not Available" does NOT trigger auto-exit
+      const validPlacementLocations = [
+        'BCNC',
+        'Detox',
+        'East County Transitional Living',
+        'La Posada',
+        'Vista',
+        'Victory Outreach',
+        'Set Free Ministries',
+        'Teen Challenge',
+        'Restoration Ranch',
+        'Mission Academy',
+        'South County Lighthouse',
+        'Other',
+      ]
+
+      if (data.placement_made && data.placement_location && validPlacementLocations.includes(data.placement_location)) {
+        // Determine exit destination based on placement type
+        let exitDestination: string
+        if (data.placement_location === 'Detox') {
+          exitDestination = 'Substance abuse treatment facility or detox center'
+        } else if (data.placement_location === 'Other' && data.placement_location_other) {
+          exitDestination = data.placement_location_other
+        } else {
+          exitDestination = 'Emergency shelter (including hotel/motel paid for with voucher)'
+        }
+
+        // Get current user for tracking
+        const { data: { user } } = await supabase.auth.getUser()
+
+        // Update person with exit date and destination
+        const { error: exitError } = await supabase
+          .from('persons')
+          .update({
+            exit_date: data.service_date,
+            exit_destination: exitDestination,
+          } as never)
+          .eq('id', personId)
+
+        if (exitError) {
+          console.error('Error auto-exiting client:', exitError)
+        } else {
+          // Log the exit to status_changes
+          await supabase
+            .from('status_changes')
+            .insert({
+              person_id: personId,
+              change_type: 'exit',
+              change_date: data.service_date,
+              exit_destination: exitDestination,
+              notes: `Auto-exited: Placement to ${data.placement_location}`,
+              created_by: user?.email || 'Field Worker',
+            } as never)
+        }
+      }
+
       // Success! Navigate back to client profile
       router.push(`/client/${personId}`)
     } catch (error) {
