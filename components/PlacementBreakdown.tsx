@@ -27,6 +27,15 @@ type PlacementDetail = {
   serviceDate: string
 }
 
+// Normalize location names to combine variations
+const normalizeLocation = (location: string): string => {
+  const normalized = location.toLowerCase().trim()
+  if (normalized === 'ectlc' || normalized.includes('east county transitional')) {
+    return 'East County Transitional Living (ECTLC)'
+  }
+  return location
+}
+
 export default function PlacementBreakdown({ encounters, persons }: PlacementBreakdownProps) {
   const [expandedLocation, setExpandedLocation] = useState<string | null>(null)
 
@@ -37,9 +46,10 @@ export default function PlacementBreakdown({ encounters, persons }: PlacementBre
   const placementsByLocation = encounters
     .filter(e => e.placement_made)
     .reduce((acc, e) => {
-      const location = e.placement_location === 'Other'
+      const rawLocation = e.placement_location === 'Other'
         ? (e.placement_location_other || 'Other')
         : (e.placement_location || 'Unknown')
+      const location = normalizeLocation(rawLocation)
 
       if (!acc[location]) {
         acc[location] = []
