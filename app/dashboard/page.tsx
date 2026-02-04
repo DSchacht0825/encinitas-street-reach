@@ -11,6 +11,7 @@ import DuplicateManager from '@/components/DuplicateManager'
 import LogoutButton from '@/components/LogoutButton'
 import ProgramExitsSection from '@/components/ProgramExitsSection'
 import MetricsGrid from '@/components/MetricsGrid'
+import PlacementBreakdown from '@/components/PlacementBreakdown'
 
 export default async function DashboardPage({
   searchParams,
@@ -661,32 +662,7 @@ export default async function DashboardPage({
         </div>
 
         {/* Placement Breakdown Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <svg className="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            Placements by Location
-          </h3>
-          <div className="mb-4">
-            <p className="text-3xl font-bold text-green-600">{metrics.placementsMade}</p>
-            <p className="text-sm text-gray-500">Total placements in this period</p>
-          </div>
-          {Object.keys(placementBreakdown).length > 0 ? (
-            <dl className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Object.entries(placementBreakdown)
-                .sort(([, a], [, b]) => b - a)
-                .map(([location, count]) => (
-                  <div key={location} className="flex justify-between items-center bg-green-50 px-4 py-3 rounded-lg">
-                    <dt className="text-gray-700 font-medium">{location}</dt>
-                    <dd className="font-bold text-green-600 text-lg">{count}</dd>
-                  </div>
-                ))}
-            </dl>
-          ) : (
-            <p className="text-gray-500 text-sm italic">No placements recorded in this period</p>
-          )}
-        </div>
+        <PlacementBreakdown encounters={allEncounters} persons={allPersons} />
 
         {/* Custom Report Builder */}
         <div className="mb-6">
