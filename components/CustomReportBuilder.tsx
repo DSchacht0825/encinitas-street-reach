@@ -2155,9 +2155,123 @@ export default function CustomReportBuilder({
               {detailModalType === 'clientsServed' && (
                 <div className="space-y-4">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-200 mb-6">
-                    <p className="text-sm text-gray-600 font-medium">Total Clients Served</p>
-                    <p className="text-4xl font-bold text-blue-600 mt-1">{generatedReport.metrics.clientsServed}</p>
-                    <p className="text-xs text-gray-500 mt-2">Unduplicated individuals in this date range</p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Total Clients Served</p>
+                        <p className="text-4xl font-bold text-blue-600 mt-1">{generatedReport.metrics.clientsServed}</p>
+                        <p className="text-xs text-gray-500 mt-2">Unduplicated individuals in this date range</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const printWindow = window.open('', '_blank')
+                          if (printWindow) {
+                            const clientRows = generatedReport.filteredPersons.map((person, index) => {
+                              const clientEncounters = encounters.filter(e => e.person_id === person.id)
+                              const age = (() => {
+                                const birthDate = new Date(person.date_of_birth)
+                                const today = new Date()
+                                let a = today.getFullYear() - birthDate.getFullYear()
+                                const monthDiff = today.getMonth() - birthDate.getMonth()
+                                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) a--
+                                return a
+                              })()
+                              return `
+                                <tr style="border-bottom: 1px solid #e5e7eb;">
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${index + 1}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.client_id}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: bold;">${person.first_name} ${person.last_name}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${age}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.gender}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.race}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.ethnicity}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.living_situation}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.veteran_status ? 'Yes' : 'No'}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.chronic_homeless ? 'Yes' : 'No'}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${new Date(person.enrollment_date).toLocaleDateString()}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${clientEncounters.length}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.case_manager || '-'}</td>
+                                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${person.exit_date ? new Date(person.exit_date).toLocaleDateString() : 'Active'}</td>
+                                </tr>
+                              `
+                            }).join('')
+
+                            printWindow.document.write(`
+                              <!DOCTYPE html>
+                              <html>
+                              <head>
+                                <title>Clients Served Report - ${generatedReport.metadata.dateRange}</title>
+                                <style>
+                                  body { font-family: Arial, sans-serif; padding: 20px; font-size: 11px; }
+                                  h1 { color: #1e40af; margin-bottom: 5px; }
+                                  h2 { color: #374151; font-size: 14px; margin-bottom: 20px; }
+                                  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                                  th { background-color: #1e40af; color: white; padding: 10px 8px; text-align: left; font-size: 10px; }
+                                  tr:nth-child(even) { background-color: #f3f4f6; }
+                                  .header-info { margin-bottom: 20px; }
+                                  .stat { display: inline-block; margin-right: 30px; }
+                                  .stat-value { font-size: 24px; font-weight: bold; color: #1e40af; }
+                                  .stat-label { font-size: 12px; color: #6b7280; }
+                                  @media print {
+                                    body { padding: 10px; }
+                                    table { font-size: 9px; }
+                                    th, td { padding: 4px; }
+                                  }
+                                </style>
+                              </head>
+                              <body>
+                                <h1>Encinitas Street Reach - Clients Served Report</h1>
+                                <h2>Date Range: ${generatedReport.metadata.dateRange}</h2>
+                                <div class="header-info">
+                                  <div class="stat">
+                                    <div class="stat-value">${generatedReport.metrics.clientsServed}</div>
+                                    <div class="stat-label">Total Clients Served</div>
+                                  </div>
+                                  <div class="stat">
+                                    <div class="stat-value">${generatedReport.metrics.totalInteractions}</div>
+                                    <div class="stat-label">Total Interactions</div>
+                                  </div>
+                                </div>
+                                <table>
+                                  <thead>
+                                    <tr>
+                                      <th>#</th>
+                                      <th>Client ID</th>
+                                      <th>Name</th>
+                                      <th>Age</th>
+                                      <th>Gender</th>
+                                      <th>Race</th>
+                                      <th>Ethnicity</th>
+                                      <th>Living Situation</th>
+                                      <th>Veteran</th>
+                                      <th>Chronic</th>
+                                      <th>Enrolled</th>
+                                      <th>Interactions</th>
+                                      <th>Case Manager</th>
+                                      <th>Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    ${clientRows}
+                                  </tbody>
+                                </table>
+                                <p style="margin-top: 20px; font-size: 10px; color: #6b7280;">
+                                  Generated on ${new Date().toLocaleString()} | Encinitas Street Reach Program
+                                </p>
+                              </body>
+                              </html>
+                            `)
+                            printWindow.document.close()
+                            printWindow.print()
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Print List
+                      </button>
+                    </div>
                   </div>
 
                   {generatedReport.filteredPersons.length > 0 ? (
