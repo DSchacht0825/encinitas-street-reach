@@ -138,6 +138,8 @@ export default function CustomReportBuilder({
   const [detailModalType, setDetailModalType] = useState<string>('')
   const [selectedEncounter, setSelectedEncounter] = useState<Encounter | null>(null)
   const [showEncounterModal, setShowEncounterModal] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<Person | null>(null)
+  const [showClientModal, setShowClientModal] = useState(false)
 
   // Metric selections
   const [includeClientsServed, setIncludeClientsServed] = useState(true)
@@ -2161,9 +2163,17 @@ export default function CustomReportBuilder({
                   {generatedReport.filteredPersons.length > 0 ? (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h5 className="font-semibold text-blue-700 text-lg mb-3">Client List</h5>
+                      <p className="text-xs text-gray-500 mb-3">Click any client to view full details</p>
                       <div className="space-y-2 max-h-96 overflow-y-auto">
                         {generatedReport.filteredPersons.map((person) => (
-                          <div key={person.id} className="bg-white rounded-lg p-3 border border-blue-100 shadow-sm flex justify-between items-center">
+                          <div
+                            key={person.id}
+                            onClick={() => {
+                              setSelectedClient(person)
+                              setShowClientModal(true)
+                            }}
+                            className="bg-white rounded-lg p-3 border border-blue-100 shadow-sm flex justify-between items-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                          >
                             <div>
                               <p className="font-semibold text-gray-900">{person.first_name} {person.last_name}</p>
                               <p className="text-sm text-gray-500">ID: {person.client_id}</p>
@@ -2171,6 +2181,7 @@ export default function CustomReportBuilder({
                             <div className="text-right text-sm text-gray-500">
                               <p>{person.gender}</p>
                               <p>{person.race}</p>
+                              <p className="text-xs text-blue-600 mt-1">Click for details →</p>
                             </div>
                           </div>
                         ))}
@@ -2762,6 +2773,266 @@ export default function CustomReportBuilder({
                   setSelectedEncounter(null)
                 }}
                 className="w-full py-2 px-4 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Client Detail Modal */}
+      {showClientModal && selectedClient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex justify-between items-center rounded-t-lg">
+              <div>
+                <h4 className="text-xl font-bold">{selectedClient.first_name} {selectedClient.last_name}</h4>
+                <p className="text-blue-100 text-sm">Client ID: {selectedClient.client_id}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowClientModal(false)
+                  setSelectedClient(null)
+                }}
+                className="text-white hover:text-blue-200 transition-colors p-2 rounded-full hover:bg-blue-500"
+                aria-label="Close modal"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Status Badges */}
+              <div className="flex flex-wrap gap-2">
+                {selectedClient.veteran_status && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">🎖️ Veteran</span>
+                )}
+                {selectedClient.chronic_homeless && (
+                  <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">⚠️ Chronically Homeless</span>
+                )}
+                {selectedClient.disability_status && (
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">♿ Has Disability</span>
+                )}
+                {selectedClient.exit_date && (
+                  <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">🚪 Exited Program</span>
+                )}
+              </div>
+
+              {/* Enrollment Info */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-200">
+                <h5 className="font-semibold text-blue-700 mb-3">📅 Enrollment Information</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Date Entered</p>
+                    <p className="font-semibold text-gray-900">{new Date(selectedClient.enrollment_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Referral Source</p>
+                    <p className="font-semibold text-gray-900">{selectedClient.referral_source || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Case Manager</p>
+                    <p className="font-semibold text-gray-900">{selectedClient.case_manager || 'Not assigned'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Demographics */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <h5 className="font-semibold text-gray-700 mb-3">👤 Demographics</h5>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Date of Birth</p>
+                    <p className="font-semibold text-gray-900">{new Date(selectedClient.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Age</p>
+                    <p className="font-semibold text-gray-900">
+                      {(() => {
+                        const birthDate = new Date(selectedClient.date_of_birth)
+                        const today = new Date()
+                        let age = today.getFullYear() - birthDate.getFullYear()
+                        const monthDiff = today.getMonth() - birthDate.getMonth()
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                          age--
+                        }
+                        return age
+                      })()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Gender</p>
+                    <p className="font-semibold text-gray-900">{selectedClient.gender}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Race</p>
+                    <p className="font-semibold text-gray-900">{selectedClient.race}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Ethnicity</p>
+                    <p className="font-semibold text-gray-900">{selectedClient.ethnicity}</p>
+                  </div>
+                  {selectedClient.sexual_orientation && (
+                    <div>
+                      <p className="text-sm text-gray-500">Sexual Orientation</p>
+                      <p className="font-semibold text-gray-900">{selectedClient.sexual_orientation}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Housing Status */}
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                <h5 className="font-semibold text-yellow-700 mb-3">🏠 Housing Status</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Living Situation</p>
+                    <p className="font-semibold text-gray-900">{selectedClient.living_situation}</p>
+                  </div>
+                  {selectedClient.length_of_time_homeless && (
+                    <div>
+                      <p className="text-sm text-gray-500">Time Homeless</p>
+                      <p className="font-semibold text-gray-900">{selectedClient.length_of_time_homeless}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Disability Info */}
+              {selectedClient.disability_status && selectedClient.disability_type && (
+                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <h5 className="font-semibold text-purple-700 mb-3">♿ Disability Information</h5>
+                  <p className="font-semibold text-gray-900">{selectedClient.disability_type}</p>
+                </div>
+              )}
+
+              {/* Exit Information */}
+              {selectedClient.exit_date && (
+                <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
+                  <h5 className="font-semibold text-red-700 mb-3">🚪 Exit Information</h5>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Exit Date</p>
+                      <p className="font-semibold text-gray-900">{new Date(selectedClient.exit_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Exit Destination</p>
+                      <p className="font-semibold text-gray-900">{selectedClient.exit_destination || 'Not specified'}</p>
+                    </div>
+                  </div>
+                  {selectedClient.exit_notes && (
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-500">Notes</p>
+                      <p className="text-gray-700 whitespace-pre-wrap">{selectedClient.exit_notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Service Interaction History */}
+              {(() => {
+                const clientEncounters = encounters
+                  .filter(e => e.person_id === selectedClient.id)
+                  .sort((a, b) => new Date(b.service_date).getTime() - new Date(a.service_date).getTime())
+
+                return (
+                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <h5 className="font-semibold text-green-700 mb-3">📋 Service Interaction History ({clientEncounters.length} total)</h5>
+                    {clientEncounters.length > 0 ? (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {clientEncounters.map((encounter, index) => (
+                          <div
+                            key={index}
+                            onClick={() => {
+                              setSelectedEncounter(encounter)
+                              setShowEncounterModal(true)
+                            }}
+                            className="bg-white rounded-lg p-3 border border-green-100 shadow-sm cursor-pointer hover:bg-green-50 hover:border-green-300 transition-colors"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-semibold text-gray-900">{new Date(encounter.service_date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                                <p className="text-sm text-gray-500">{encounter.outreach_location}</p>
+                                <p className="text-xs text-gray-400">Worker: {encounter.outreach_worker}</p>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex gap-1 flex-wrap justify-end">
+                                  {encounter.naloxone_distributed && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Naloxone</span>}
+                                  {encounter.mat_referral && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">MAT</span>}
+                                  {encounter.detox_referral && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Detox</span>}
+                                  {encounter.placement_made && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Placement</span>}
+                                  {encounter.transportation_provided && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Transport</span>}
+                                  {encounter.high_utilizer_contact && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">High Utilizer</span>}
+                                </div>
+                                <p className="text-xs text-green-600 mt-1">Click for details →</p>
+                              </div>
+                            </div>
+                            {encounter.case_management_notes && (
+                              <p className="text-sm text-gray-600 mt-2 line-clamp-2">{encounter.case_management_notes}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No service interactions recorded</p>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Summary Stats */}
+              {(() => {
+                const clientEncounters = encounters.filter(e => e.person_id === selectedClient.id)
+                const naloxoneCount = clientEncounters.filter(e => e.naloxone_distributed).length
+                const matReferrals = clientEncounters.filter(e => e.mat_referral).length
+                const detoxReferrals = clientEncounters.filter(e => e.detox_referral).length
+                const placements = clientEncounters.filter(e => e.placement_made).length
+                const fentanylStrips = clientEncounters.reduce((sum, e) => sum + (e.fentanyl_test_strips_count || 0), 0)
+
+                return (
+                  <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                    <h5 className="font-semibold text-indigo-700 mb-3">📊 Client Summary Statistics</h5>
+                    <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
+                      <div>
+                        <p className="text-2xl font-bold text-blue-600">{clientEncounters.length}</p>
+                        <p className="text-xs text-gray-500">Total Interactions</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-red-600">{naloxoneCount}</p>
+                        <p className="text-xs text-gray-500">Naloxone Given</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-yellow-600">{fentanylStrips}</p>
+                        <p className="text-xs text-gray-500">Fentanyl Strips</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-purple-600">{matReferrals}</p>
+                        <p className="text-xs text-gray-500">MAT Referrals</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-orange-600">{detoxReferrals}</p>
+                        <p className="text-xs text-gray-500">Detox Referrals</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-green-600">{placements}</p>
+                        <p className="text-xs text-gray-500">Placements</p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg">
+              <button
+                onClick={() => {
+                  setShowClientModal(false)
+                  setSelectedClient(null)
+                }}
+                className="w-full py-2 px-4 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
               >
                 Close
               </button>
