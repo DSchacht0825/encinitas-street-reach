@@ -667,7 +667,7 @@ export default async function DashboardPage({
         <PlacementBreakdown encounters={allEncounters} persons={allPersons} />
 
         {/* Caseload Breakdown Section */}
-        <CaseloadBreakdown persons={allPersons} />
+        <CaseloadBreakdown persons={allPersons} encounters={allEncountersUnfiltered} />
 
         {/* Custom Report Builder */}
         <div className="mb-6">
