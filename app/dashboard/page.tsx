@@ -12,7 +12,6 @@ import LogoutButton from '@/components/LogoutButton'
 import ProgramExitsSection from '@/components/ProgramExitsSection'
 import MetricsGrid from '@/components/MetricsGrid'
 import PlacementBreakdown from '@/components/PlacementBreakdown'
-import CaseloadBreakdown from '@/components/CaseloadBreakdown'
 
 export default async function DashboardPage({
   searchParams,
@@ -665,9 +664,6 @@ export default async function DashboardPage({
 
         {/* Placement Breakdown Section */}
         <PlacementBreakdown encounters={allEncounters} persons={allPersons} />
-
-        {/* Caseload Breakdown Section */}
-        <CaseloadBreakdown persons={allPersons} encounters={allEncountersUnfiltered} />
 
         {/* Custom Report Builder */}
         <div className="mb-6">
