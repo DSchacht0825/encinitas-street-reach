@@ -12,6 +12,7 @@ import LogoutButton from '@/components/LogoutButton'
 import ProgramExitsSection from '@/components/ProgramExitsSection'
 import MetricsGrid from '@/components/MetricsGrid'
 import PlacementBreakdown from '@/components/PlacementBreakdown'
+import CaseloadBreakdown from '@/components/CaseloadBreakdown'
 
 export default async function DashboardPage({
   searchParams,
@@ -274,6 +275,7 @@ export default async function DashboardPage({
     'Permanent housing for formerly homeless persons (CoC, ESG, or other funding)',
     'Staying or living with family, permanent tenure',
     'Staying or living with friends, permanent tenure',
+    'Permanent housing',
   ]
   const shelterDests = [
     'Emergency shelter (including hotel/motel paid for with voucher)',
@@ -663,6 +665,9 @@ export default async function DashboardPage({
 
         {/* Placement Breakdown Section */}
         <PlacementBreakdown encounters={allEncounters} persons={allPersons} />
+
+        {/* Caseload Breakdown Section */}
+        <CaseloadBreakdown persons={allPersons} />
 
         {/* Custom Report Builder */}
         <div className="mb-6">
