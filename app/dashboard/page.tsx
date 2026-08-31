@@ -12,6 +12,7 @@ import LogoutButton from '@/components/LogoutButton'
 import ProgramExitsSection from '@/components/ProgramExitsSection'
 import MetricsGrid from '@/components/MetricsGrid'
 import PlacementBreakdown from '@/components/PlacementBreakdown'
+import OutflowsCard from '@/components/OutflowsCard'
 
 export default async function DashboardPage({
   searchParams,
@@ -578,46 +579,11 @@ export default async function DashboardPage({
           </div>
 
           {/* Outflows Card */}
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg shadow-lg p-6 border-2 border-amber-200">
-            <div className="flex items-center mb-4">
-              <svg className="w-6 h-6 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <h3 className="text-xl font-bold text-gray-900">Outflows</h3>
-            </div>
-            <p className="text-4xl font-bold text-amber-600">{outflows.housed.length + outflows.sheltered.length + outflows.detox.length}</p>
-            <p className="text-sm text-gray-600 mt-2">Exits to housing, shelter, or detox</p>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="bg-white rounded p-2 text-center">
-                <p className="text-2xl font-bold text-blue-600">{outflows.housed.length}</p>
-                <p className="text-xs text-gray-600">Housed</p>
-              </div>
-              <div className="bg-white rounded p-2 text-center">
-                <p className="text-2xl font-bold text-teal-600">{outflows.sheltered.length}</p>
-                <p className="text-xs text-gray-600">Sheltered</p>
-              </div>
-              <div className="bg-white rounded p-2 text-center">
-                <p className="text-2xl font-bold text-purple-600">{outflows.detox.length}</p>
-                <p className="text-xs text-gray-600">Detox</p>
-              </div>
-            </div>
-            {(outflows.housed.length + outflows.sheltered.length + outflows.detox.length) > 0 && (
-              <div className="mt-4 max-h-32 overflow-y-auto">
-                <p className="text-xs font-medium text-gray-500 mb-2">Recent outflows:</p>
-                {[...outflows.housed, ...outflows.sheltered, ...outflows.detox]
-                  .sort((a, b) => new Date(b.exit_date!).getTime() - new Date(a.exit_date!).getTime())
-                  .slice(0, 5)
-                  .map((p) => (
-                    <div key={p.id} className="text-sm py-1 border-b border-amber-100">
-                      <span className="font-medium">{p.first_name} {p.last_name}</span>
-                      <span className="text-gray-500 ml-2 text-xs">
-                        {p.exit_destination?.split('(')[0].trim()}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
+          <OutflowsCard
+            housed={outflows.housed}
+            sheltered={outflows.sheltered}
+            detox={outflows.detox}
+          />
         </div>
 
         {/* Referral Breakdown Section */}
