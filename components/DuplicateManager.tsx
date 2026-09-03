@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { calculateSimilarity } from '@/lib/utils/duplicate-detection'
 import { createClient } from '@/lib/supabase/client'
+import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { format } from 'date-fns'
 
 interface Person {
@@ -45,10 +46,11 @@ export default function DuplicateManager({ persons }: DuplicateManagerProps) {
     const supabase = createClient()
 
     try {
-      // Get encounter counts for all persons
-      const { data: encounters } = await supabase
-        .from('encounters')
-        .select('person_id')
+      // Get encounter counts for all persons (paged past the 1000-row cap)
+      const { data: encounters } = await fetchAllRows<{ person_id: string }>(
+        supabase,
+        'encounters'
+      )
 
       const counts: Record<string, number> = {}
       if (encounters) {

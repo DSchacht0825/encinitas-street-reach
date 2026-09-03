@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { fuzzySearchPersons } from '@/lib/utils/duplicate-detection'
 import { format } from 'date-fns'
 import Link from 'next/link'
@@ -75,32 +76,10 @@ export default function ClientSearch() {
     const supabase = createClient()
 
     try {
-      // Get all persons with their encounters including case notes
-      const { data: persons, error } = await supabase
-        .from('persons')
-        .select(`
-          id,
-          client_id,
-          first_name,
-          last_name,
-          nickname,
-          date_of_birth,
-          photo_url,
-          phone_number,
-          exit_date,
-          exit_destination,
-          encounters (
-            service_date,
-            outreach_location,
-            case_management_notes
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      // Process the data to include only the most recent encounter and all case notes
-      const processedPersons = persons?.map((person: {
+      // Get all persons with their encounters including case notes.
+      // fetchAllRows pages past PostgREST's 1000-row cap so the by-name list
+      // stays complete once the persons table grows past 1000.
+      const { data: persons, error } = await fetchAllRows<{
         id: string
         client_id: string
         first_name: string
@@ -112,7 +91,36 @@ export default function ClientSearch() {
         exit_date?: string | null
         exit_destination?: string | null
         encounters?: Array<{ service_date: string; outreach_location: string; case_management_notes: string | null }>
-      }) => {
+      }>(
+        supabase,
+        'persons',
+        {
+          select: `
+            id,
+            client_id,
+            first_name,
+            last_name,
+            nickname,
+            date_of_birth,
+            photo_url,
+            phone_number,
+            exit_date,
+            exit_destination,
+            encounters (
+              service_date,
+              outreach_location,
+              case_management_notes
+            )
+          `,
+          orderBy: 'created_at',
+          ascending: false,
+        }
+      )
+
+      if (error) throw error
+
+      // Process the data to include only the most recent encounter and all case notes
+      const processedPersons = persons?.map((person) => {
         // Sort encounters by date (most recent first)
         const sortedEncounters = person.encounters?.sort((a, b) =>
           new Date(b.service_date).getTime() - new Date(a.service_date).getTime()

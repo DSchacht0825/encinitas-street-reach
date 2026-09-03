@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
+import { fetchAllRows } from '@/lib/supabase/fetch-all'
 import { format } from 'date-fns'
 import { redirect } from 'next/navigation'
 import { isAdmin } from '@/lib/utils/auth'
@@ -32,47 +33,46 @@ export default async function DashboardPage({
   const startDate = params.start_date || null
   const endDate = params.end_date || null
 
-  // Fetch ALL encounters for CustomReportBuilder (unfiltered)
-  const { data: allEncountersData, error: allEncountersError } = await supabase
-    .from('encounters')
-    .select('*')
+  // Fetch ALL encounters for CustomReportBuilder (unfiltered).
+  // fetchAllRows pages past PostgREST's 1000-row cap — without it, recent
+  // encounters silently drop off once the table passes 1000 rows.
+  const { data: allEncountersData, error: allEncountersError } =
+    await fetchAllRows(supabase, 'encounters')
 
   // Build filtered query for dashboard metrics
   // Use timestamp range that covers the full day in local timezone
   // Start date: beginning of day (00:00:00)
   // End date: end of day (23:59:59)
-  let dashboardEncountersQuery = supabase.from('encounters').select('*')
-
-  if (startDate && endDate) {
-    // Both dates provided: filter between range
-    const startTimestamp = `${startDate}T00:00:00`
-    const endTimestamp = `${endDate}T23:59:59`
-    dashboardEncountersQuery = dashboardEncountersQuery
-      .gte('service_date', startTimestamp)
-      .lte('service_date', endTimestamp)
-  } else if (startDate) {
-    // Only start date: filter from start date onwards
-    const startTimestamp = `${startDate}T00:00:00`
-    dashboardEncountersQuery = dashboardEncountersQuery
-      .gte('service_date', startTimestamp)
-  } else if (endDate) {
-    // Only end date: filter up to end date
-    const endTimestamp = `${endDate}T23:59:59`
-    dashboardEncountersQuery = dashboardEncountersQuery
-      .lte('service_date', endTimestamp)
-  }
-
-  const { data: encounters, error: encountersError } = await dashboardEncountersQuery
+  const { data: encounters, error: encountersError } = await fetchAllRows(
+    supabase,
+    'encounters',
+    {
+      build: (query) => {
+        if (startDate && endDate) {
+          return query
+            .gte('service_date', `${startDate}T00:00:00`)
+            .lte('service_date', `${endDate}T23:59:59`)
+        } else if (startDate) {
+          return query.gte('service_date', `${startDate}T00:00:00`)
+        } else if (endDate) {
+          return query.lte('service_date', `${endDate}T23:59:59`)
+        }
+        return query
+      },
+    }
+  )
 
   // Fetch all persons
-  const { data: persons, error: personsError } = await supabase
-    .from('persons')
-    .select('*')
+  const { data: persons, error: personsError } = await fetchAllRows(
+    supabase,
+    'persons'
+  )
 
   // Fetch all status changes for reporting
-  const { data: statusChanges, error: statusChangesError } = await supabase
-    .from('status_changes')
-    .select('*')
+  const { data: statusChanges, error: statusChangesError } = await fetchAllRows(
+    supabase,
+    'status_changes'
+  )
 
   if (encountersError || personsError || allEncountersError || statusChangesError) {
     console.error('Dashboard data fetch error:', encountersError || personsError || allEncountersError || statusChangesError)
